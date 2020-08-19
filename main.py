@@ -55,6 +55,12 @@ BLACK = 3 * (0,)
 GREY = 3 * (127,)
 
 
+COLORS = tuple(
+    pygame.Color(color)
+    for color in ("red", "orange", "yellow", "green", "blue", "purple")
+)
+
+
 class Tetris:
     """
     Represents a game of Tetris
@@ -70,24 +76,14 @@ class Tetris:
                 pygame.draw.rect(
                     grid_surface,
                     GREY,
-                    (
-                        x * SQUARE_SIZE,
-                        y * SQUARE_SIZE,
-                        SQUARE_SIZE,
-                        SQUARE_SIZE,
-                    ),
+                    (x * SQUARE_SIZE, y * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE,),
                     LINE_WIDTH,
                 )
                 if square:
                     pygame.draw.rect(
                         grid_surface,
                         COLORS[square],
-                        (
-                            x * SQUARE_SIZE,
-                            y * SQUARE_SIZE,
-                            SQUARE_SIZE,
-                            SQUARE_SIZE,
-                        ),
+                        (x * SQUARE_SIZE, y * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE,),
                     )
 
         self.display.blit(grid_surface, GRID_POS)
