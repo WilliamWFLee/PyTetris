@@ -27,9 +27,33 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
+import pygame
+
+
+class Tetris:
+    """
+    Represents a game of Tetris
+    """
+
+    def run(self):
+        pygame.init()
+        self.display = pygame.display.set_mode((400, 600))
+
+        running = True
+        while running:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                    break
+            if running:
+                pygame.display.update()
+
+        pygame.quit()
+
 
 def main():
-    pass
+    game = Tetris()
+    game.run()
 
 
 if __name__ == "__main__":
