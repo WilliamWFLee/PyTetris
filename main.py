@@ -37,6 +37,10 @@ SQUARE_SIZE = 30
 DisplaySize = namedtuple("DisplaySize", "width height")
 DISPLAY_SIZE = DisplaySize(COLUMNS * SQUARE_SIZE, ROWS * SQUARE_SIZE)
 
+WHITE = 3 * (255,)
+BLACK = 3 * (0,)
+GREY = 3 * (127,)
+
 
 class Tetris:
     """
