@@ -33,7 +33,9 @@ import pygame
 ROWS = 22
 COLUMNS = 10
 SQUARE_SIZE = 30
-DISPLAY_SIZE = tuple(v * SQUARE_SIZE for v in (COLUMNS, ROWS))
+
+DisplaySize = namedtuple("DisplaySize", "width height")
+DISPLAY_SIZE = DisplaySize(COLUMNS * SQUARE_SIZE, ROWS * SQUARE_SIZE)
 
 
 class Tetris:
