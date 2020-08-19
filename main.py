@@ -96,6 +96,7 @@ class Tetris:
         self.display.blit(grid_surface, GRID_POS)
 
     def render(self):
+        self.display.fill(WHITE)
         self.draw_grid()
 
     def run(self):
