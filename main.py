@@ -30,6 +30,12 @@ SOFTWARE.
 import pygame
 
 
+ROWS = 22
+COLUMNS = 10
+SQUARE_SIZE = 30
+DISPLAY_SIZE = tuple(v * SQUARE_SIZE for v in (COLUMNS, ROWS))
+
+
 class Tetris:
     """
     Represents a game of Tetris
@@ -37,7 +43,7 @@ class Tetris:
 
     def run(self):
         pygame.init()
-        self.display = pygame.display.set_mode((400, 600))
+        self.display = pygame.display.set_mode(DISPLAY_SIZE)
 
         running = True
         while running:
