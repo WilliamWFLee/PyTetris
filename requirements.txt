@@ -1,1 +1,1 @@
-# Add your package requirements here
+pygame==1.9.6
