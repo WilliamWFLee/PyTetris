@@ -27,15 +27,27 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-import pygame
+from collections import namedtuple
 
+import pygame
 
 ROWS = 22
 COLUMNS = 10
 SQUARE_SIZE = 30
+LINE_WIDTH = 1
 
-DisplaySize = namedtuple("DisplaySize", "width height")
-DISPLAY_SIZE = DisplaySize(COLUMNS * SQUARE_SIZE, ROWS * SQUARE_SIZE)
+# Padding around the grid, as the number of squares,
+# left and right, and up and down respectively
+PADDING = (3, 4)
+
+Dimensions = namedtuple("Dimensions", "width height")
+Position = namedtuple("Position", "x y")
+
+DISPLAY_SIZE = Dimensions(
+    *((v + 2 * pad) * SQUARE_SIZE for v, pad in zip((COLUMNS, ROWS), PADDING))
+)
+GRID_SIZE = Dimensions(COLUMNS * SQUARE_SIZE, ROWS * SQUARE_SIZE)
+GRID_POS = Position(*(pad * SQUARE_SIZE for pad in PADDING))
 
 WHITE = 3 * (255,)
 BLACK = 3 * (0,)
@@ -46,6 +58,22 @@ class Tetris:
     """
     Represents a game of Tetris
     """
+
+    def draw_grid(self):
+        grid_surface = pygame.Surface(GRID_SIZE)
+        for y in range(ROWS):
+            for x in range(COLUMNS):
+                pygame.draw.rect(
+                    grid_surface,
+                    GREY,
+                    (x * SQUARE_SIZE, y * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE,),
+                    LINE_WIDTH,
+                )
+
+        self.display.blit(grid_surface, GRID_POS)
+
+    def render(self):
+        self.draw_grid()
 
     def run(self):
         pygame.init()
@@ -58,6 +86,7 @@ class Tetris:
                     running = False
                     break
             if running:
+                self.render()
                 pygame.display.update()
 
         pygame.quit()
