@@ -55,43 +55,40 @@ BLACK = 3 * (0,)
 GREY = 3 * (127,)
 
 
-class GridSquare:
-    """
-    Represents a square on the Tetris grid
-    """
-    def __init__(self, x: int, y: int, color: Optional[Tuple[int, int, int]] = None):
-        self.x = x
-        self.y = y
-        self.color = color
-
-    def draw(self, surface):
-        pygame.draw.rect(
-            surface,
-            GREY,
-            (self.x * SQUARE_SIZE, self.y * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE,),
-            LINE_WIDTH,
-        )
-        if self.color is not None:
-            pygame.draw.rect(
-                surface,
-                self.color,
-                (self.x * SQUARE_SIZE, self.y * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE,),
-            )
-
-
 class Tetris:
     """
     Represents a game of Tetris
     """
 
     def __init__(self):
-        self.grid = [[GridSquare(x, y) for x in range(COLUMNS)] for y in range(ROWS)]
+        self.grid = [[0 for x in range(COLUMNS)] for y in range(ROWS)]
 
     def draw_grid(self):
         grid_surface = pygame.Surface(GRID_SIZE)
-        for row in self.grid:
-            for square in row:
-                square.draw(grid_surface)
+        for y, row in enumerate(self.grid):
+            for x, square in enumerate(row):
+                pygame.draw.rect(
+                    grid_surface,
+                    GREY,
+                    (
+                        x * SQUARE_SIZE,
+                        y * SQUARE_SIZE,
+                        SQUARE_SIZE,
+                        SQUARE_SIZE,
+                    ),
+                    LINE_WIDTH,
+                )
+                if square:
+                    pygame.draw.rect(
+                        grid_surface,
+                        COLORS[square],
+                        (
+                            x * SQUARE_SIZE,
+                            y * SQUARE_SIZE,
+                            SQUARE_SIZE,
+                            SQUARE_SIZE,
+                        ),
+                    )
 
         self.display.blit(grid_surface, GRID_POS)
 
