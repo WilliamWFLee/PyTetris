@@ -28,7 +28,6 @@ SOFTWARE.
 """
 
 from collections import namedtuple
-from typing import Optional, Tuple
 
 import pygame
 
