@@ -122,13 +122,22 @@ class Tetromino:
         self._block = BLOCKS[block_type][:]
         self.grid = grid
 
-        self._place_on_grid()
-
     @property
     def block(self):
         return self._block if self.block_type != BlockType.OBlock else self._block[1:]
 
-    def _place_on_grid(self):
+    def _can_place(self) -> bool:
+        return self._can_move(dx=0, dy=0)
+
+    def place(self) -> bool:
+        """
+        Places the tetromino on the playing field
+
+        :return: Whether the placement was successful
+        :rtype: bool
+        """
+        if not self._can_place():
+            return False
         for y, row in enumerate(self.block):
             for x, square in enumerate(row):
                 if (
@@ -137,6 +146,7 @@ class Tetromino:
                     and 0 <= self.y + y < ROWS
                 ):
                     self.grid[self.y + y][self.x + x] = self.color + 1
+        return True
 
     def _remove_from_grid(self):
         for y, row in enumerate(self.block):
@@ -156,11 +166,9 @@ class Tetromino:
                 new_x = self.x + x + dx
                 new_y = self.y + y + dy
                 if (
-                    new_x < 0
-                    or new_x >= COLUMNS
-                    or new_y < 0
-                    or new_y >= ROWS
-                    or self.grid[self.y + y + dy][self.x + x + dx] != 0
+                    not 0 <= new_x < COLUMNS
+                    or not 0 <= new_y < ROWS
+                    or self.grid[new_y][new_x] != 0
                 ):
                     return False
         return True
@@ -198,7 +206,7 @@ class Tetromino:
         if can_move:
             self.x += dx
             self.y += dy
-        self._place_on_grid()
+        self.place()
 
         return can_move
 
@@ -272,6 +280,8 @@ class Tetris:
                         random.choice(list(BlockType)),
                         self.grid
                     )
+                    if not self.block.place():
+                        self.block = None
                     new_block = False
 
                 millis = clock.tick(60)
@@ -281,8 +291,8 @@ class Tetris:
                     lock_delay += millis
                 if time >= fall_interval:
                     block_fall = True
-                    time = time % fall_interval
-                if block_fall:
+                    time %= fall_interval
+                if block_fall and self.block is not None:
                     moved = self.block.move_down()
                     if not moved:
                         lock_delay_started = True
