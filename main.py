@@ -236,7 +236,7 @@ class Tetris:
         pygame.init()
         self.display = pygame.display.set_mode(DISPLAY_SIZE)
 
-        pygame.key.set_repeat(1, 16)
+        pygame.key.set_repeat(100, 50)
 
         clock = pygame.time.Clock()
         fall_interval = 1000
