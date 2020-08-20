@@ -64,7 +64,7 @@ GREY = 3 * (127,)
 
 COLORS = tuple(
     pygame.Color(color)
-    for color in ("red", "orange", "yellow", "green", "blue", "purple")
+    for color in ("cyan", "yellow", "purple", "green", "red", "blue", "orange")
 )
 
 
@@ -112,12 +112,9 @@ class Tetromino:
     Represents a Tetris tetromino
     """
 
-    def __init__(
-        self, x: int, y: int, color: int, block_type: BlockType, grid: List[List[int]]
-    ):
+    def __init__(self, x: int, y: int, block_type: BlockType, grid: List[List[int]]):
         self.x = x
         self.y = y
-        self.color = color
         self.block_type = block_type
         self._block = BLOCKS[block_type][:]
         self.grid = grid
@@ -145,7 +142,7 @@ class Tetromino:
                     and 0 <= self.x + x < COLUMNS
                     and 0 <= self.y + y < ROWS
                 ):
-                    self.grid[self.y + y][self.x + x] = self.color + 1
+                    self.grid[self.y + y][self.x + x] = self.block_type.value + 1
         return True
 
     def _remove_from_grid(self):
@@ -275,10 +272,7 @@ class Tetris:
             if running:
                 if new_block:
                     self.block = Tetromino(
-                        *SPAWN_POS,
-                        random.randrange(len(COLORS)),
-                        random.choice(list(BlockType)),
-                        self.grid
+                        *SPAWN_POS, random.choice(list(BlockType)), self.grid
                     )
                     if not self.block.place():
                         self.block = None
