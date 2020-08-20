@@ -144,6 +144,16 @@ class Tetromino:
                 ):
                     self.grid[self.y + y][self.x + x] = 0
 
+    def _can_move(self, dx: int, dy: int) -> bool:
+        for y, row in enumerate(self.block):
+            for x, square in enumerate(row):
+                try:
+                    if square == "." and self.grid[self.y + y + dy][self.x + y + dx] != 0:
+                        return False
+                except IndexError:
+                    return False
+        return True
+
     def move_down(self) -> bool:
         """
         Moves the tetromino down one block
@@ -152,10 +162,12 @@ class Tetromino:
         :rtype: bool
         """
         self._remove_from_grid()
-        self.y += 1
+        can_move = self._can_move(dx=0, dy=1)
+        if can_move:
+            self.y += 1
         self._place_on_grid()
 
-        return True
+        return can_move
 
 
 class Tetris:
@@ -199,6 +211,8 @@ class Tetris:
 
         running = True
         new_block = True
+        block_fall = False
+
         while running:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -213,12 +227,17 @@ class Tetris:
                         self.grid
                     )
                     new_block = False
+
+                if time >= fall_interval:
+                    block_fall = True
+                    time = time % fall_interval
+                if block_fall:
+                    self.block.move_down()
+                    block_fall = False
+
                 self.render()
                 pygame.display.update()
                 time += clock.tick(60)
-                if time >= fall_interval:
-                    self.block.move_down()
-                    time = time % fall_interval
 
         pygame.quit()
 
