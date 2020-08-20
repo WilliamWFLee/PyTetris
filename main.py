@@ -150,7 +150,10 @@ class Tetromino:
         for y, row in enumerate(self.block):
             for x, square in enumerate(row):
                 try:
-                    if square == "." and self.grid[self.y + y + dy][self.x + y + dx] != 0:
+                    if (
+                        square == "."
+                        and self.grid[self.y + y + dy][self.x + x + dx] != 0
+                    ):
                         return False
                 except IndexError:
                     return False
