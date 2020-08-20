@@ -170,6 +170,26 @@ class Tetromino:
                     return False
         return True
 
+    def _move(self, dx=0, dy=0) -> bool:
+        self._remove_from_grid()
+        can_move = self._can_move(dx=dx, dy=dy)
+        if can_move:
+            self.x += dx
+            self.y += dy
+        self.place()
+
+        return can_move
+
+    def _rotate(self, amount: int) -> bool:
+        amount %= 4
+        for _ in range(amount):
+            self._block = [
+                "".join(self.block[y][x] for y in range(len(self.block) - 1, -1, -1))
+                for x in range(len(self.block[0]))
+            ]
+
+        return True
+
     def move_down(self) -> bool:
         """
         Moves the tetromino down one block
@@ -197,15 +217,16 @@ class Tetromino:
         """
         return self._move(dx=1)
 
-    def _move(self, dx=0, dy=0) -> bool:
-        self._remove_from_grid()
-        can_move = self._can_move(dx=dx, dy=dy)
-        if can_move:
-            self.x += dx
-            self.y += dy
-        self.place()
+    def rotate_clockwise(self) -> bool:
+        """
+        Rotates the tetromino clockwise
 
-        return can_move
+        :return: Whether the rotation was successful
+        :rtype: bool
+        """
+        self._remove_from_grid()
+        self._rotate(1)
+        self.place()
 
 
 class Tetris:
@@ -269,6 +290,8 @@ class Tetris:
                         self.block.move_left()
                     elif event.key == pygame.K_RIGHT:
                         self.block.move_right()
+                    elif event.key == pygame.K_z:
+                        self.block.rotate_clockwise()
             if running:
                 if new_block:
                     self.block = Tetromino(
