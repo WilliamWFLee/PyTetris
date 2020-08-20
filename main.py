@@ -398,7 +398,11 @@ class Tetris:
                     time %= fall_interval
                 if block_fall and self.block is not None:
                     moved = self.block.move_down()
-                    lock_delay_started = not moved
+                    if moved:
+                        lock_delay_started = False
+                        lock_delay = 0
+                    else:
+                        lock_delay_started = True
                     block_fall = False
                 if lock_delay >= LOCK_DELAY:
                     lock_delay_started = False
