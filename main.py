@@ -83,10 +83,7 @@ JLSTZ_WALL_KICKS = {
         1: [(-1, 0), (-1, 1), (0, -2), (-1, -2)],
         3: [(1, 0), (1, 1), (0, -2), (1, -2)],
     },
-    1: {
-        0: [(1, 0), (1, -1), (0, 2), (1, 2)],
-        2: [(1, 0), (1, -1), (0, 2), (1, 2)],
-    },
+    1: {0: [(1, 0), (1, -1), (0, 2), (1, 2)], 2: [(1, 0), (1, -1), (0, 2), (1, 2)],},
     2: {
         1: [(-1, 0), (-1, 1), (0, -2), (-1, -2)],
         3: [(1, 0), (1, 1), (0, -2), (1, -2)],
@@ -99,10 +96,7 @@ JLSTZ_WALL_KICKS = {
 
 
 I_WALL_KICKS = {
-    0: {
-        1: [(-2, 0), (1, 0), (-2, 1), (1, 2)],
-        3: [(-1, 0), (2, 0), (-1, 2), (2, -1)],
-    },
+    0: {1: [(-2, 0), (1, 0), (-2, 1), (1, 2)], 3: [(-1, 0), (2, 0), (-1, 2), (2, -1)],},
     1: {
         0: [(2, 0), (-1, 0), (2, 1), (-1, -2)],
         2: [(-1, 0), (2, 0), (-1, 2), (2, -1)],
@@ -111,10 +105,7 @@ I_WALL_KICKS = {
         1: [(1, 0), (-2, 0), (1, -2), (-2, 1)],
         3: [(2, 0), (-1, 0), (2, 1), (-1, -2)],
     },
-    3: {
-        2: [(1, 0), (1, 0), (-2, -1), (1, 2)],
-        0: [(1, 0), (-2, 0), (1, -2), (-2, 1)],
-    },
+    3: {2: [(1, 0), (1, 0), (-2, -1), (1, 2)], 0: [(1, 0), (-2, 0), (1, -2), (-2, 1)],},
 }
 
 
@@ -321,6 +312,12 @@ class Tetris:
         while self.block.move_down():
             pass
 
+    @staticmethod
+    def _generate_tetrominoes():
+        tetrominoes = list(BlockType)
+        random.shuffle(tetrominoes)
+        return tetrominoes
+
     def draw_grid(self):
         grid_surface = pygame.Surface(VISIBLE_PLAYFIELD_SIZE)
         for y, row in enumerate(self.grid[-VISIBLE_ROWS:]):
@@ -360,6 +357,7 @@ class Tetris:
         block_fall = False
         lock_delay_started = False
 
+        next_tetrominoes = []
         while running:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -381,8 +379,10 @@ class Tetris:
             if running:
                 if new_block:
                     self._clear_lines()
+                    if not next_tetrominoes:
+                        next_tetrominoes = self._generate_tetrominoes()
                     self.block = Tetromino(
-                        *SPAWN_POS, random.choice(list(BlockType)), self.grid
+                        *SPAWN_POS, next_tetrominoes.pop(), self.grid
                     )
                     if not self.block.place():
                         self.block = None
