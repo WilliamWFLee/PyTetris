@@ -130,7 +130,7 @@ class Tetromino:
                 if (
                     square == "."
                     and 0 <= self.x + x < COLUMNS
-                    and 0 <= self.y + y <= ROWS
+                    and 0 <= self.y + y < ROWS
                 ):
                     self.grid[self.y + y][self.x + x] = self.color + 1
 
@@ -140,7 +140,7 @@ class Tetromino:
                 if (
                     square == "."
                     and 0 <= self.x + x < COLUMNS
-                    and 0 <= self.y + y <= ROWS
+                    and 0 <= self.y + y < ROWS
                 ):
                     self.grid[self.y + y][self.x + x] = 0
 
