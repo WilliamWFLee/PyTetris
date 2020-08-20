@@ -34,7 +34,8 @@ from typing import List
 
 import pygame
 
-ROWS = 22
+VISIBLE_ROWS = 20
+ROWS = 40
 COLUMNS = 10
 SQUARE_SIZE = 30
 LINE_WIDTH = 1
@@ -49,11 +50,12 @@ Dimensions = namedtuple("Dimensions", "width height")
 Position = namedtuple("Position", "x y")
 
 DISPLAY_SIZE = Dimensions(
-    *((v + 2 * pad) * SQUARE_SIZE for v, pad in zip((COLUMNS, ROWS), PADDING))
+    *((v + 2 * pad) * SQUARE_SIZE for v, pad in zip((COLUMNS, VISIBLE_ROWS), PADDING))
 )
-GRID_SIZE = Dimensions(COLUMNS * SQUARE_SIZE, ROWS * SQUARE_SIZE)
+PLAYFIELD_SIZE = Dimensions(COLUMNS * SQUARE_SIZE, ROWS * SQUARE_SIZE)
+VISIBLE_PLAYFIELD_SIZE = Dimensions(COLUMNS * SQUARE_SIZE, VISIBLE_ROWS * SQUARE_SIZE)
 GRID_POS = Position(*(pad * SQUARE_SIZE for pad in PADDING))
-SPAWN_POS = Position(3, 0)
+SPAWN_POS = Position(3, 21)
 
 WHITE = 3 * (255,)
 BLACK = 3 * (0,)
@@ -210,8 +212,8 @@ class Tetris:
         self.grid = [[0 for x in range(COLUMNS)] for y in range(ROWS)]
 
     def draw_grid(self):
-        grid_surface = pygame.Surface(GRID_SIZE)
-        for y, row in enumerate(self.grid):
+        grid_surface = pygame.Surface(VISIBLE_PLAYFIELD_SIZE)
+        for y, row in enumerate(self.grid[-VISIBLE_ROWS:]):
             for x, square in enumerate(row):
                 pygame.draw.rect(
                     grid_surface,
