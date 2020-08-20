@@ -149,13 +149,17 @@ class Tetromino:
     def _can_move(self, dx: int, dy: int) -> bool:
         for y, row in enumerate(self.block):
             for x, square in enumerate(row):
-                try:
-                    if (
-                        square == "."
-                        and self.grid[self.y + y + dy][self.x + x + dx] != 0
-                    ):
-                        return False
-                except IndexError:
+                if not square == ".":
+                    continue
+                new_x = self.x + x + dx
+                new_y = self.y + y + dy
+                if (
+                    new_x < 0
+                    or new_x >= COLUMNS
+                    or new_y < 0
+                    or new_y >= ROWS
+                    or self.grid[self.y + y + dy][self.x + x + dx] != 0
+                ):
                     return False
         return True
 
