@@ -30,7 +30,7 @@ SOFTWARE.
 import random
 from collections import namedtuple
 from enum import Enum
-from typing import List
+from typing import List, Optional
 
 import pygame
 
@@ -78,6 +78,55 @@ class BlockType(Enum):
     ZBlock = 6
 
 
+JLSTZ_WALL_KICKS = {
+    0: {
+        1: [(-1, 0), (-1, 1), (0, -2), (-1, -2)],
+        3: [(1, 0), (1, 1), (0, -2), (1, -2)],
+    },
+    1: {
+        0: [(1, 0), (1, -1), (0, 2), (1, 2)],
+        2: [(1, 0), (1, -1), (0, 2), (1, 2)],
+    },
+    2: {
+        1: [(-1, 0), (-1, 1), (0, -2), (-1, -2)],
+        3: [(1, 0), (1, 1), (0, -2), (1, -2)],
+    },
+    3: {
+        2: [(-1, 0), (-1, -1), (0, 2), (-1, 2)],
+        0: [(-1, 0), (-1, -1), (0, 2), (-1, 2)],
+    },
+}
+
+
+I_WALL_KICKS = {
+    0: {
+        1: [(-2, 0), (1, 0), (-2, 1), (1, 2)],
+        3: [(-1, 0), (2, 0), (-1, 2), (2, -1)],
+    },
+    1: {
+        0: [(2, 0), (-1, 0), (2, 1), (-1, -2)],
+        2: [(-1, 0), (2, 0), (-1, 2), (2, -1)],
+    },
+    2: {
+        1: [(1, 0), (-2, 0), (1, -2), (-2, 1)],
+        3: [(2, 0), (-1, 0), (2, 1), (-1, -2)],
+    },
+    3: {
+        2: [(1, 0), (1, 0), (-2, -1), (1, 2)],
+        0: [(1, 0), (-2, 0), (1, -2), (-2, 1)],
+    },
+}
+
+
+WALL_KICKS = {
+    BlockType.JBlock: JLSTZ_WALL_KICKS,
+    BlockType.LBlock: JLSTZ_WALL_KICKS,
+    BlockType.JBlock: JLSTZ_WALL_KICKS,
+    BlockType.TBlock: JLSTZ_WALL_KICKS,
+    BlockType.ZBlock: JLSTZ_WALL_KICKS,
+}
+
+
 # fmt: off
 BLOCKS = {
     BlockType.IBlock: ["    ",
@@ -118,6 +167,7 @@ class Tetromino:
         self.block_type = block_type
         self._block = BLOCKS[block_type][:]
         self.grid = grid
+        self.rotation = 0
 
     @property
     def block(self):
@@ -170,24 +220,42 @@ class Tetromino:
                     return False
         return True
 
-    def _move(self, dx=0, dy=0) -> bool:
+    def _move(self, dx: int = 0, dy: int = 0, test_move: bool = True) -> Optional[bool]:
+        # Moves the block to the specified locaion
+        # Returns if the operation succeeded, if test_move is True, otherwise None
         self._remove_from_grid()
-        can_move = self._can_move(dx=dx, dy=dy)
-        if can_move:
+        if test_move:
+            can_move = self._can_move(dx=dx, dy=dy)
+        if not test_move or can_move:
             self.x += dx
             self.y += dy
         self.place()
 
-        return can_move
+        return can_move if test_move else None
 
     def _rotate(self, amount: int) -> bool:
         amount %= 4
+        old_rotation = self.rotation
+        self.rotation = (self.rotation + amount) % 4
         for _ in range(amount):
             self._block = [
                 "".join(self.block[y][x] for y in range(len(self.block) - 1, -1, -1))
                 for x in range(len(self.block[0]))
             ]
 
+        if not self._can_place():
+            try:
+                wall_kicks = WALL_KICKS[self.block_type][old_rotation][self.rotation]
+            except KeyError:
+                pass
+            else:
+                for dx, dy in wall_kicks:
+                    if self._can_move(dx=dx, dy=dy):
+                        self._move(dx=dx, dy=dy, test_move=False)
+                        return True
+
+            self._rotate(-amount)
+            return False
         return True
 
     def move_down(self) -> bool:
@@ -225,8 +293,10 @@ class Tetromino:
         :rtype: bool
         """
         self._remove_from_grid()
-        self._rotate(1)
+        result = self._rotate(1)
         self.place()
+
+        return result
 
 
 class Tetris:
@@ -236,6 +306,20 @@ class Tetris:
 
     def __init__(self):
         self.grid = [[0 for x in range(COLUMNS)] for y in range(ROWS)]
+
+    def _clear_lines(self) -> int:
+        count = 0
+        for y, row in enumerate(self.grid):
+            if all(square != 0 for square in row):
+                self.grid = (
+                    [[0 for _ in range(COLUMNS)]] + self.grid[:y] + self.grid[y + 1 :]
+                )
+                count += 1
+        return count
+
+    def _hard_drop(self):
+        while self.block.move_down():
+            pass
 
     def draw_grid(self):
         grid_surface = pygame.Surface(VISIBLE_PLAYFIELD_SIZE)
@@ -292,8 +376,11 @@ class Tetris:
                         self.block.move_right()
                     elif event.key == pygame.K_z:
                         self.block.rotate_clockwise()
+                    elif event.key == pygame.K_SPACE:
+                        self._hard_drop()
             if running:
                 if new_block:
+                    self._clear_lines()
                     self.block = Tetromino(
                         *SPAWN_POS, random.choice(list(BlockType)), self.grid
                     )
@@ -311,8 +398,7 @@ class Tetris:
                     time %= fall_interval
                 if block_fall and self.block is not None:
                     moved = self.block.move_down()
-                    if not moved:
-                        lock_delay_started = True
+                    lock_delay_started = not moved
                     block_fall = False
                 if lock_delay >= LOCK_DELAY:
                     lock_delay_started = False
