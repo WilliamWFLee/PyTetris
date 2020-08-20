@@ -223,18 +223,18 @@ class Tetris:
         grid_surface = pygame.Surface(VISIBLE_PLAYFIELD_SIZE)
         for y, row in enumerate(self.grid[-VISIBLE_ROWS:]):
             for x, square in enumerate(row):
-                pygame.draw.rect(
-                    grid_surface,
-                    GREY,
-                    (x * SQUARE_SIZE, y * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE,),
-                    LINE_WIDTH,
-                )
                 if square:
                     pygame.draw.rect(
                         grid_surface,
                         COLORS[square - 1],
                         (x * SQUARE_SIZE, y * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE,),
                     )
+                pygame.draw.rect(
+                    grid_surface,
+                    GREY,
+                    (x * SQUARE_SIZE, y * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE,),
+                    LINE_WIDTH,
+                )
 
         self.display.blit(grid_surface, GRID_POS)
 
