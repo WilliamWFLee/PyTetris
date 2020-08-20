@@ -205,6 +205,8 @@ class Tetris:
         pygame.init()
         self.display = pygame.display.set_mode(DISPLAY_SIZE)
 
+        pygame.key.set_repeat(1, 16)
+
         clock = pygame.time.Clock()
         fall_interval = 1000
         time = 0
@@ -218,6 +220,9 @@ class Tetris:
                 if event.type == pygame.QUIT:
                     running = False
                     break
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_DOWN:
+                        block_fall = True
             if running:
                 if new_block:
                     self.block = Tetromino(
@@ -228,6 +233,8 @@ class Tetris:
                     )
                     new_block = False
 
+                if not block_fall:
+                    time += clock.tick(60)
                 if time >= fall_interval:
                     block_fall = True
                     time = time % fall_interval
@@ -237,7 +244,6 @@ class Tetris:
 
                 self.render()
                 pygame.display.update()
-                time += clock.tick(60)
 
         pygame.quit()
 
