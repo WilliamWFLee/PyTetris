@@ -28,6 +28,8 @@ SOFTWARE.
 """
 
 from collections import namedtuple
+from enum import Enum
+from typing import List, Sequence
 
 import pygame
 
@@ -58,6 +60,72 @@ COLORS = tuple(
     pygame.Color(color)
     for color in ("red", "orange", "yellow", "green", "blue", "purple")
 )
+
+
+class BlockType(Enum):
+    IBlock = 0
+    JBlock = 1
+    LBlock = 2
+    OBlock = 3
+    SBlock = 4
+    TBlock = 5
+    ZBlock = 6
+
+
+# fmt: off
+BLOCKS = {
+    BlockType.IBlock: ["    ",
+                       "....",
+                       "    ",
+                       "...."],
+    BlockType.JBlock: [".  ",
+                       "...",
+                       "   "],
+    BlockType.LBlock: ["  .",
+                       "...",
+                       "   "],
+    BlockType.OBlock: ["    ",
+                       " .. ",
+                       " .. ",
+                       "    "],
+    BlockType.SBlock: [" ..",
+                       ".. ",
+                       "   "],
+    BlockType.TBlock: [" . ",
+                       "...",
+                       "   "],
+    BlockType.ZBlock: [".. ",
+                       " ..",
+                       "   "],
+}
+# fmt: on
+
+
+class Tetromino:
+    """
+    Represents a Tetris tetromino
+    """
+
+    def __init__(
+        self, x: int, y: int, color: int, block_type: BlockType, grid: List[List[int]]
+    ):
+        self.x = x
+        self.y = y
+        self.color = color
+        self.block_type = block_type
+        self.block = BLOCKS[block_type][:]
+        self.grid = grid
+        self.rotation = 0
+
+        self._place_on_grid()
+
+    def _place_on_grid(self):
+        for y, row in enumerate(
+            self.block if self.block_type != BlockType.OBlock else self.block[1:]
+        ):
+            for x, square in enumerate(self.block):
+                if square == "." and 0 <= self.x + x < COLUMNS and 0 <= self.y + y <= ROWS:
+                    self.grid[y][x] = self.color
 
 
 class Tetris:
