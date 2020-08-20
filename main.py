@@ -257,7 +257,7 @@ class Tetris:
                     if event.key == pygame.K_DOWN:
                         block_fall = True
                     else:
-                        lock_delay = 0
+                        lock_delay *= 0.9
                     if event.key == pygame.K_LEFT:
                         self.block.move_left()
                     elif event.key == pygame.K_RIGHT:
