@@ -170,10 +170,32 @@ class Tetromino:
         :return: Whether the move was successful
         :rtype: bool
         """
+        return self._move(dy=1)
+
+    def move_left(self) -> bool:
+        """
+        Moves the tetromino left one block
+
+        :return: Whether the move was successful
+        :rtype: bool
+        """
+        return self._move(dx=-1)
+
+    def move_right(self) -> bool:
+        """
+        Moves the tetromino right one block
+
+        :return: Whether the move was successful
+        :rtype: bool
+        """
+        return self._move(dx=1)
+
+    def _move(self, dx=0, dy=0) -> bool:
         self._remove_from_grid()
-        can_move = self._can_move(dx=0, dy=1)
+        can_move = self._can_move(dx=dx, dy=dy)
         if can_move:
-            self.y += 1
+            self.x += dx
+            self.y += dy
         self._place_on_grid()
 
         return can_move
@@ -234,6 +256,12 @@ class Tetris:
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_DOWN:
                         block_fall = True
+                    else:
+                        lock_delay = 0
+                    if event.key == pygame.K_LEFT:
+                        self.block.move_left()
+                    elif event.key == pygame.K_RIGHT:
+                        self.block.move_right()
             if running:
                 if new_block:
                     self.block = Tetromino(
