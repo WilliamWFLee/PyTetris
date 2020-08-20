@@ -117,7 +117,6 @@ class Tetromino:
         self.block_type = block_type
         self.block = BLOCKS[block_type][:]
         self.grid = grid
-        self.rotation = 0
 
         self._place_on_grid()
 
