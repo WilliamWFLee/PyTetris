@@ -27,9 +27,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
+import random
 from collections import namedtuple
 from enum import Enum
-from typing import List, Sequence
+from typing import List 
 
 import pygame
 
@@ -50,6 +51,7 @@ DISPLAY_SIZE = Dimensions(
 )
 GRID_SIZE = Dimensions(COLUMNS * SQUARE_SIZE, ROWS * SQUARE_SIZE)
 GRID_POS = Position(*(pad * SQUARE_SIZE for pad in PADDING))
+SPAWN_POS = Position(3, 0)
 
 WHITE = 3 * (255,)
 BLACK = 3 * (0,)
@@ -123,9 +125,13 @@ class Tetromino:
         for y, row in enumerate(
             self.block if self.block_type != BlockType.OBlock else self.block[1:]
         ):
-            for x, square in enumerate(self.block):
-                if square == "." and 0 <= self.x + x < COLUMNS and 0 <= self.y + y <= ROWS:
-                    self.grid[y][x] = self.color
+            for x, square in enumerate(row):
+                if (
+                    square == "."
+                    and 0 <= self.x + x < COLUMNS
+                    and 0 <= self.y + y <= ROWS
+                ):
+                    self.grid[self.y + y][self.x + x] = self.color + 1
 
 
 class Tetris:
@@ -149,7 +155,7 @@ class Tetris:
                 if square:
                     pygame.draw.rect(
                         grid_surface,
-                        COLORS[square],
+                        COLORS[square - 1],
                         (x * SQUARE_SIZE, y * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE,),
                     )
 
@@ -164,12 +170,21 @@ class Tetris:
         self.display = pygame.display.set_mode(DISPLAY_SIZE)
 
         running = True
+        new_block = True
         while running:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
                     break
             if running:
+                if new_block:
+                    self.block = Tetromino(
+                        *SPAWN_POS,
+                        random.randrange(len(COLORS)),
+                        random.choice(list(BlockType)),
+                        self.grid
+                    )
+                    new_block = False
                 self.render()
                 pygame.display.update()
 
