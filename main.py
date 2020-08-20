@@ -39,6 +39,8 @@ COLUMNS = 10
 SQUARE_SIZE = 30
 LINE_WIDTH = 1
 
+LOCK_DELAY = 500
+
 # Padding around the grid, as the number of squares,
 # left and right, and up and down respectively
 PADDING = (3, 4)
@@ -210,10 +212,12 @@ class Tetris:
         clock = pygame.time.Clock()
         fall_interval = 1000
         time = 0
+        lock_delay = 0
 
         running = True
         new_block = True
         block_fall = False
+        lock_delay_started = False
 
         while running:
             for event in pygame.event.get():
@@ -233,14 +237,23 @@ class Tetris:
                     )
                     new_block = False
 
+                millis = clock.tick(60)
                 if not block_fall:
-                    time += clock.tick(60)
+                    time += millis
+                if lock_delay_started:
+                    lock_delay += millis
                 if time >= fall_interval:
                     block_fall = True
                     time = time % fall_interval
                 if block_fall:
-                    self.block.move_down()
+                    moved = self.block.move_down()
+                    if not moved:
+                        lock_delay_started = True
                     block_fall = False
+                if lock_delay >= LOCK_DELAY:
+                    lock_delay_started = False
+                    lock_delay = 0
+                    new_block = True
 
                 self.render()
                 pygame.display.update()
