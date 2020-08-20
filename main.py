@@ -115,15 +115,17 @@ class Tetromino:
         self.y = y
         self.color = color
         self.block_type = block_type
-        self.block = BLOCKS[block_type][:]
+        self._block = BLOCKS[block_type][:]
         self.grid = grid
 
         self._place_on_grid()
 
+    @property
+    def block(self):
+        return self._block if self.block_type != BlockType.OBlock else self._block[1:]
+
     def _place_on_grid(self):
-        for y, row in enumerate(
-            self.block if self.block_type != BlockType.OBlock else self.block[1:]
-        ):
+        for y, row in enumerate(self.block):
             for x, square in enumerate(row):
                 if (
                     square == "."
@@ -131,6 +133,29 @@ class Tetromino:
                     and 0 <= self.y + y <= ROWS
                 ):
                     self.grid[self.y + y][self.x + x] = self.color + 1
+
+    def _remove_from_grid(self):
+        for y, row in enumerate(self.block):
+            for x, square in enumerate(row):
+                if (
+                    square == "."
+                    and 0 <= self.x + x < COLUMNS
+                    and 0 <= self.y + y <= ROWS
+                ):
+                    self.grid[self.y + y][self.x + x] = 0
+
+    def move_down(self) -> bool:
+        """
+        Moves the tetromino down one block
+
+        :return: Whether the move was successful
+        :rtype: bool
+        """
+        self._remove_from_grid()
+        self.y += 1
+        self._place_on_grid()
+
+        return True
 
 
 class Tetris:
