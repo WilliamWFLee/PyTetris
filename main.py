@@ -30,7 +30,7 @@ SOFTWARE.
 import random
 from collections import namedtuple
 from enum import Enum
-from typing import List 
+from typing import List
 
 import pygame
 
@@ -193,6 +193,10 @@ class Tetris:
         pygame.init()
         self.display = pygame.display.set_mode(DISPLAY_SIZE)
 
+        clock = pygame.time.Clock()
+        fall_interval = 1000
+        time = 0
+
         running = True
         new_block = True
         while running:
@@ -211,6 +215,10 @@ class Tetris:
                     new_block = False
                 self.render()
                 pygame.display.update()
+                time += clock.tick(60)
+                if time >= fall_interval:
+                    self.block.move_down()
+                    time = time % fall_interval
 
         pygame.quit()
 
