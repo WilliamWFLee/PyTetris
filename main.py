@@ -77,7 +77,7 @@ BLOCKS = {
     BlockType.IBlock: ["    ",
                        "....",
                        "    ",
-                       "...."],
+                       "    "],
     BlockType.JBlock: [".  ",
                        "...",
                        "   "],
