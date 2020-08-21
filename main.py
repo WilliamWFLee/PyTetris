@@ -351,9 +351,6 @@ class Tetris:
     Represents a game of Tetris
     """
 
-    def __init__(self):
-        self.grid = [[0 for x in range(COLUMNS)] for y in range(ROWS)]
-
     def _clear_lines(self) -> int:
         count = 0
         for y, row in enumerate(self.grid):
@@ -395,7 +392,7 @@ class Tetris:
 
         self.display.blit(grid_surface, GRID_POS)
 
-    def _new_block(self, block_type: Optional[BlockType] = None) -> bool:
+    def _new_block(self, block_type: Optional[BlockType] = None):
         if block_type is None:
             if not self.next_tetrominoes:
                 self.next_tetrominoes = self._generate_tetrominoes()
@@ -422,48 +419,8 @@ class Tetris:
         self.block_held = True
 
     def _run_game(self):
-        if self.new_block:
-            self._clear_lines()
-            self._new_block()
-            self.new_block = False
-            self.block_held = False
-
-        if not self.block:
-            return
-
-        millis = self.clock.tick()
-        if not self.block_fall:
-            self.fall_timer += millis
-        if self.lock_started:
-            self.lock_delay += millis
-        if self.fall_timer >= self.fall_interval:
-            self.block_fall = True
-            self.fall_timer %= self.fall_interval
-        if self.block.can_move(dx=0, dy=1):
-            self.lock_started = False
-            self.lock_delay = 0
-            if self.block_fall:
-                self.block.move_down(test_move=False)
-            self.block_fall = False
-        else:
-            self.lock_started = True
-        if self.lock_delay >= LOCK_DELAY:
-            moved = self.block.move_down()
-            self.new_block = not moved
-            self.lock_delay = 0
-
-    def render(self):
-        self.display.fill(WHITE)
-        self._draw_grid()
-
-    def run(self):
-        pygame.init()
-        self.display = pygame.display.set_mode(DISPLAY_SIZE)
-
-        pygame.key.set_repeat(170, 50)
-
-        running = True
-
+        # Returns whether to the game is still to run
+        self.grid = [[0 for x in range(COLUMNS)] for y in range(ROWS)]
         self.fall_interval = 1000
         self.clock = pygame.time.Clock()
         self.fall_timer = 0
@@ -475,13 +432,13 @@ class Tetris:
         self.block_held = False  # Indicates whether a block has been held this turn
         self.block = None
         self.game_over = False
-
         self.next_tetrominoes = []
-        while running:
+
+        game_over = False
+        while not game_over:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    running = False
-                    break
+                    return False
                 elif self.block is None:
                     continue
                 if event.type == pygame.KEYDOWN:
@@ -502,12 +459,55 @@ class Tetris:
                             result = moves[event.key]()
                             if result:
                                 self.lock_delay = 0
-            if running:
-                if not self.game_over:
-                    self._run_game()
+            if self.new_block:
+                self._clear_lines()
+                self._new_block()
+                self.new_block = False
+                self.block_held = False
+                if self.block is None:
+                    game_over = True
 
-                self.render()
-                pygame.display.update()
+            if game_over:
+                break
+
+            if self.block:
+                millis = self.clock.tick()
+                if not self.block_fall:
+                    self.fall_timer += millis
+                if self.lock_started:
+                    self.lock_delay += millis
+                if self.fall_timer >= self.fall_interval:
+                    self.block_fall = True
+                    self.fall_timer %= self.fall_interval
+                if self.block.can_move(dx=0, dy=1):
+                    self.lock_started = False
+                    self.lock_delay = 0
+                    if self.block_fall:
+                        self.block.move_down(test_move=False)
+                    self.block_fall = False
+                else:
+                    self.lock_started = True
+                if self.lock_delay >= LOCK_DELAY:
+                    moved = self.block.move_down()
+                    self.new_block = not moved
+                    self.lock_delay = 0
+            self.render()
+            pygame.display.update()
+        return True
+
+    def render(self):
+        self.display.fill(WHITE)
+        self._draw_grid()
+
+    def run(self):
+        pygame.init()
+        self.display = pygame.display.set_mode(DISPLAY_SIZE)
+        pygame.key.set_repeat(170, 50)
+
+        while True:
+            run = self._run_game()
+            if not run:
+                break
 
         pygame.quit()
 
