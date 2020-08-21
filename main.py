@@ -459,7 +459,7 @@ class Tetris:
         pygame.init()
         self.display = pygame.display.set_mode(DISPLAY_SIZE)
 
-        pygame.key.set_repeat(100, 50)
+        pygame.key.set_repeat(170, 50)
 
         running = True
 
