@@ -228,6 +228,8 @@ class Tetromino:
 
     def can_move(self, dx: int, dy: int) -> bool:
         # Determines whether this shape can move in a given direction
+        can_move = False
+        was_placed = self.placed
         self.remove()
         for y, row in enumerate(self.block):
             for x, square in enumerate(row):
@@ -240,10 +242,15 @@ class Tetromino:
                     or not 0 <= new_y < ROWS
                     or self.grid[new_y][new_x] != 0
                 ):
-                    self.place(test_place=False)
-                    return False
-        self.place(test_place=False)
-        return True
+                    break
+            else:
+                continue
+            break
+        else:
+            can_move = True
+        if was_placed:
+            self.place(test_place=False)
+        return can_move
 
     def _move(self, dx: int = 0, dy: int = 0, test_move: bool = True) -> Optional[bool]:
         # Moves the block to the specified location
@@ -264,6 +271,7 @@ class Tetromino:
         # is 90 degrees clockwise, -1 is 90 degrees anticlockwise
         if self.block_type == BlockType.OBlock:
             return True
+        self.remove()
         amount %= 4
         old_rotation = self.rotation
         self.rotation = (self.rotation + amount) % 4
@@ -285,7 +293,9 @@ class Tetromino:
                         return True
 
             self._rotate(-amount)  # Undoes the rotation
+            self.place()
             return False
+        self.place()
         return True
 
     def move_down(self, *, test_move: bool = True) -> bool:
@@ -324,11 +334,7 @@ class Tetromino:
         :return: Whether the rotation was successful
         :rtype: bool
         """
-        self.remove()
-        result = self._rotate(1)
-        self.place(test_place=False)
-
-        return result
+        return self._rotate(1)
 
 
 class Tetris:
