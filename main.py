@@ -495,6 +495,15 @@ class Tetris:
             pygame.display.update()
         return True
 
+    def _game_over(self):
+        while True:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    return False
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_r:
+                    return True
+        return False
+
     def render(self):
         self.display.fill(WHITE)
         self._draw_grid()
@@ -507,6 +516,9 @@ class Tetris:
         while True:
             run = self._run_game()
             if not run:
+                break
+            restart = self._game_over()
+            if not restart:
                 break
 
         pygame.quit()
