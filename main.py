@@ -137,6 +137,7 @@ WALL_KICKS = {
     BlockType.JBlock: JLSTZ_WALL_KICKS,
     BlockType.TBlock: JLSTZ_WALL_KICKS,
     BlockType.ZBlock: JLSTZ_WALL_KICKS,
+    BlockType.IBlock: I_WALL_KICKS,
 }
 
 # Tetromino definitions
