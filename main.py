@@ -63,7 +63,7 @@ VISIBLE_PLAYFIELD_SIZE = Dimensions(COLUMNS * SQUARE_SIZE, VISIBLE_ROWS * SQUARE
 # The position of the playfield relative to the display surface
 GRID_POS = Position(*(pad * SQUARE_SIZE for pad in PADDING))
 # The position that new tetrominoes appear
-SPAWN_POS = Position(3, 21)
+SPAWN_POS = Position(3, 19)
 
 # Color tuples
 WHITE = 3 * (255,)
@@ -370,6 +370,7 @@ class Tetris:
         self.block = Tetromino(*SPAWN_POS, self.next_tetrominoes.pop(), self.grid)
         if not self.block.place():
             self.block = None
+        self.block.move_down()
 
     def _hold_block(self):
         if self.block_held:
