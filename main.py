@@ -385,6 +385,30 @@ class Tetris:
             self.block = block
         self.block_held = True
 
+    def _run_game(self):
+        if self.new_block:
+            self._clear_lines()
+            self._new_block()
+            self.new_block = False
+            self.block_held = False
+
+        millis = self.clock.tick(60)
+        if not self.block_fall:
+            self.time += millis
+        self.lock_delay += millis
+        if self.time >= self.fall_interval:
+            self.block_fall = True
+            self.time %= self.fall_interval
+        if self.block_fall:
+            moved = self.block.move_down()
+            if moved:
+                self.lock_delay = 0
+            self.block_fall = False
+        if self.lock_delay >= LOCK_DELAY:
+            moved = self.block.move_down()
+            self.new_block = not moved
+            self.lock_delay = 0
+
     def render(self):
         self.display.fill(WHITE)
         self._draw_grid()
@@ -395,16 +419,18 @@ class Tetris:
 
         pygame.key.set_repeat(100, 50)
 
-        clock = pygame.time.Clock()
-        fall_interval = 1000
-        time = 0
-        lock_delay = 0
-
         running = True
-        new_block = True
-        block_fall = False
+
+        self.fall_interval = 1000
+        self.clock = pygame.time.Clock()
+        self.time = 0
+        self.lock_delay = 0
+        self.block_fall = False
+        self.new_block = True
         self.hold_block_type = None
         self.block_held = False  # Indicates whether a block has been held this turn
+        self.block = None
+        self.game_over = False
 
         self.next_tetrominoes = []
         while running:
@@ -412,9 +438,11 @@ class Tetris:
                 if event.type == pygame.QUIT:
                     running = False
                     break
+                elif self.block is None:
+                    continue
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_DOWN:
-                        block_fall = True
+                        self.block_fall = True
                     elif event.key == pygame.K_SPACE:
                         self._hard_drop()
                     elif event.key == pygame.K_c:
@@ -428,30 +456,10 @@ class Tetris:
                         if event.key in moves:
                             result = moves[event.key]()
                             if result:
-                                lock_delay = 0
+                                self.lock_delay = 0
             if running:
-                if new_block:
-                    self._clear_lines()
-                    self._new_block()
-                    new_block = False
-                    self.block_held = False
-
-                millis = clock.tick(60)
-                if not block_fall:
-                    time += millis
-                lock_delay += millis
-                if time >= fall_interval:
-                    block_fall = True
-                    time %= fall_interval
-                if block_fall and self.block is not None:
-                    moved = self.block.move_down()
-                    if moved:
-                        lock_delay = 0
-                    block_fall = False
-                if lock_delay >= LOCK_DELAY:
-                    moved = self.block.move_down()
-                    new_block = not moved
-                    lock_delay = 0
+                if not self.game_over:
+                    self._run_game()
 
                 self.render()
                 pygame.display.update()
