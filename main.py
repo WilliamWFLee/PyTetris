@@ -379,10 +379,12 @@ class Tetris:
 
         self.display.blit(grid_surface, GRID_POS)
 
-    def _new_block(self) -> bool:
-        if not self.next_tetrominoes:
-            self.next_tetrominoes = self._generate_tetrominoes()
-        self.block = Tetromino(*SPAWN_POS, self.next_tetrominoes.pop(), self.grid)
+    def _new_block(self, block_type: Optional[BlockType] = None) -> bool:
+        if block_type is None:
+            if not self.next_tetrominoes:
+                self.next_tetrominoes = self._generate_tetrominoes()
+            block_type = self.next_tetrominoes.pop()
+        self.block = Tetromino(*SPAWN_POS, block_type, self.grid)
         if not self.block.place():
             self.block = None
         else:
@@ -393,12 +395,12 @@ class Tetris:
             return
         self.block.remove()
         if self.hold_block_type is None:
-            hold_block_type = self.block.block_type
+            self.hold_block_type = self.block.block_type
             self._new_block()
         else:
-            block = Tetromino(*SPAWN_POS, hold_block_type, self.grid)
-            hold_block_type = self.block.block_type
-            self.block = block
+            old_block_type = self.block.block_type
+            self._new_block(self.hold_block_type)
+            self.hold_block_type = old_block_type
         self.block_held = True
 
     def _run_game(self):
