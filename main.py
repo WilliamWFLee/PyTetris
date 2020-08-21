@@ -152,8 +152,7 @@ BLOCKS = {
     BlockType.LBlock: ["  .",
                        "...",
                        "   "],
-    BlockType.OBlock: ["    ",
-                       " .. ",
+    BlockType.OBlock: [" .. ",
                        " .. ",
                        "    "],
     BlockType.SBlock: [" ..",
@@ -178,13 +177,9 @@ class Tetromino:
         self.x = x
         self.y = y
         self.block_type = block_type
-        self._block = BLOCKS[block_type][:]
+        self.block = BLOCKS[block_type][:]
         self.grid = grid
         self.rotation = 0
-
-    @property
-    def block(self):
-        return self._block if self.block_type != BlockType.OBlock else self._block[1:]
 
     def _can_place(self) -> bool:
         return self._can_move(dx=0, dy=0)
@@ -252,11 +247,13 @@ class Tetromino:
         # Rotates a shape by a certain amount
         # Rotations as multiples of 90 degrees clockwise, so a rotation of 1
         # is 90 degrees clockwise, -1 is 90 degrees anticlockwise
+        if self.block_type == BlockType.OBlock:
+            return True
         amount %= 4
         old_rotation = self.rotation
         self.rotation = (self.rotation + amount) % 4
         for _ in range(amount):
-            self._block = [
+            self.block = [
                 "".join(self.block[y][x] for y in range(len(self.block) - 1, -1, -1))
                 for x in range(len(self.block[0]))
             ]
