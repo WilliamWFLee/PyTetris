@@ -367,6 +367,7 @@ class Tetris:
     def _hard_drop(self):
         while self.block.move_down():
             pass
+        self.new_block = True
 
     @staticmethod
     def _generate_tetrominoes():  # Implements the Random Generator
