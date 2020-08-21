@@ -403,7 +403,6 @@ class Tetris:
         running = True
         new_block = True
         block_fall = False
-        lock_delay_started = False
         self.hold_block_type = None
         self.block_held = False  # Indicates whether a block has been held this turn
 
@@ -416,19 +415,20 @@ class Tetris:
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_DOWN:
                         block_fall = True
-                    else:
-                        lock_delay = 0
-                        lock_delay_started = False
-                    if event.key == pygame.K_LEFT:
-                        self.block.move_left()
-                    elif event.key == pygame.K_RIGHT:
-                        self.block.move_right()
-                    elif event.key == pygame.K_z:
-                        self.block.rotate_clockwise()
                     elif event.key == pygame.K_SPACE:
                         self._hard_drop()
                     elif event.key == pygame.K_c:
                         self._hold_block()
+                    else:
+                        moves = {
+                            pygame.K_LEFT: self.block.move_left,
+                            pygame.K_RIGHT: self.block.move_right,
+                            pygame.K_z: self.block.rotate_clockwise,
+                        }
+                        if event.key in moves:
+                            result = moves[event.key]()
+                            if result:
+                                lock_delay = 0
             if running:
                 if new_block:
                     self._clear_lines()
@@ -439,23 +439,18 @@ class Tetris:
                 millis = clock.tick(60)
                 if not block_fall:
                     time += millis
-                if lock_delay_started:
-                    lock_delay += millis
+                lock_delay += millis
                 if time >= fall_interval:
                     block_fall = True
                     time %= fall_interval
                 if block_fall and self.block is not None:
                     moved = self.block.move_down()
                     if moved:
-                        lock_delay_started = False
                         lock_delay = 0
-                    else:
-                        lock_delay_started = True
                     block_fall = False
                 if lock_delay >= LOCK_DELAY:
                     moved = self.block.move_down()
                     new_block = not moved
-                    lock_delay_started = False
                     lock_delay = 0
 
                 self.render()
