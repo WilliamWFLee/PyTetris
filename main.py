@@ -341,7 +341,7 @@ class Tetris:
         random.shuffle(tetrominoes)
         return tetrominoes
 
-    def draw_grid(self):
+    def _draw_grid(self):
         # Draws the grid and the squares on the board
         grid_surface = pygame.Surface(VISIBLE_PLAYFIELD_SIZE)
         for y, row in enumerate(self.grid[-VISIBLE_ROWS:]):
@@ -361,9 +361,29 @@ class Tetris:
 
         self.display.blit(grid_surface, GRID_POS)
 
+    def _new_block(self):
+        if not self.next_tetrominoes:
+            next_tetrominoes = self._generate_tetrominoes()
+        self.block = Tetromino(*SPAWN_POS, next_tetrominoes.pop(), self.grid)
+        if not self.block.place():
+            self.block = None
+
+    def _hold_block(self):
+        if self.block_held:
+            return
+        self.block.remove()
+        if self.hold_block_type is None:
+            hold_block_type = self.block.block_type
+            self._new_block()
+        else:
+            block = Tetromino(*SPAWN_POS, hold_block_type, self.grid)
+            hold_block_type = self.block.block_type
+            self.block = block
+        self.block_held = True
+
     def render(self):
         self.display.fill(WHITE)
-        self.draw_grid()
+        self._draw_grid()
 
     def run(self):
         pygame.init()
@@ -380,10 +400,10 @@ class Tetris:
         new_block = True
         block_fall = False
         lock_delay_started = False
-        hold_block_type = None
-        block_held = False
+        self.hold_block_type = None
+        self.block_held = False  # Indicates whether a block has been held this turn
 
-        next_tetrominoes = []
+        self.next_tetrominoes = []
         while running:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -404,29 +424,13 @@ class Tetris:
                     elif event.key == pygame.K_SPACE:
                         self._hard_drop()
                     elif event.key == pygame.K_c:
-                        if block_held:
-                            continue
-                        self.block.remove()
-                        if hold_block_type is None:
-                            hold_block_type = self.block.block_type
-                            new_block = True
-                        else:
-                            block = Tetromino(*SPAWN_POS, hold_block_type, self.grid)
-                            hold_block_type = self.block.block_type
-                            self.block = block
-                        block_held = True
-
+                        self._hold_block()
             if running:
                 if new_block:
                     self._clear_lines()
-                    if not next_tetrominoes:
-                        next_tetrominoes = self._generate_tetrominoes()
-                    self.block = Tetromino(
-                        *SPAWN_POS, next_tetrominoes.pop(), self.grid
-                    )
-                    if not self.block.place():
-                        self.block = None
+                    self._new_block()
                     new_block = False
+                    self.block_held = False
 
                 millis = clock.tick(60)
                 if not block_fall:
