@@ -81,6 +81,7 @@ class BlockType(Enum):
     """
     Enumeration of the block types
     """
+
     IBlock = 0
     JBlock = 1
     LBlock = 2
@@ -124,10 +125,7 @@ I_WALL_KICKS = {
         1: [(1, 0), (-2, 0), (1, -2), (-2, 1)],
         3: [(2, 0), (-1, 0), (2, 1), (-1, -2)],
     },
-    3: {
-        2: [(1, 0), (1, 0), (-2, -1), (1, 2)],
-        0: [(1, 0), (-2, 0), (1, -2), (-2, 1)],
-    },
+    3: {2: [(1, 0), (1, 0), (-2, -1), (1, 2)], 0: [(1, 0), (-2, 0), (1, -2), (-2, 1)],},
 }
 
 
@@ -204,7 +202,7 @@ class Tetromino:
                     self.grid[self.y + y][self.x + x] = self.block_type.value + 1
         return True
 
-    def _remove_from_grid(self):
+    def remove(self):
         # Removes this shape from the grid
         for y, row in enumerate(self.block):
             for x, square in enumerate(row):
@@ -234,7 +232,7 @@ class Tetromino:
     def _move(self, dx: int = 0, dy: int = 0, test_move: bool = True) -> Optional[bool]:
         # Moves the block to the specified locaion
         # Returns if the operation succeeded, if test_move is True, otherwise None
-        self._remove_from_grid()
+        self.remove()
         if test_move:
             can_move = self._can_move(dx=dx, dy=dy)
         if not test_move or can_move:
@@ -308,7 +306,7 @@ class Tetromino:
         :return: Whether the rotation was successful
         :rtype: bool
         """
-        self._remove_from_grid()
+        self.remove()
         result = self._rotate(1)
         self.place()
 
@@ -382,6 +380,8 @@ class Tetris:
         new_block = True
         block_fall = False
         lock_delay_started = False
+        hold_block_type = None
+        block_held = False
 
         next_tetrominoes = []
         while running:
@@ -403,6 +403,19 @@ class Tetris:
                         self.block.rotate_clockwise()
                     elif event.key == pygame.K_SPACE:
                         self._hard_drop()
+                    elif event.key == pygame.K_c:
+                        if block_held:
+                            continue
+                        self.block.remove()
+                        if hold_block_type is None:
+                            hold_block_type = self.block.block_type
+                            new_block = True
+                        else:
+                            block = Tetromino(*SPAWN_POS, hold_block_type, self.grid)
+                            hold_block_type = self.block.block_type
+                            self.block = block
+                        block_held = True
+
             if running:
                 if new_block:
                     self._clear_lines()
