@@ -393,7 +393,8 @@ class Tetris:
                     if event.key == pygame.K_DOWN:
                         block_fall = True
                     else:
-                        lock_delay *= 0.9
+                        lock_delay = 0
+                        lock_delay_started = False
                     if event.key == pygame.K_LEFT:
                         self.block.move_left()
                     elif event.key == pygame.K_RIGHT:
@@ -431,9 +432,10 @@ class Tetris:
                         lock_delay_started = True
                     block_fall = False
                 if lock_delay >= LOCK_DELAY:
+                    moved = self.block.move_down()
+                    new_block = not moved
                     lock_delay_started = False
                     lock_delay = 0
-                    new_block = True
 
                 self.render()
                 pygame.display.update()
