@@ -364,13 +364,14 @@ class Tetris:
 
         self.display.blit(grid_surface, GRID_POS)
 
-    def _new_block(self):
+    def _new_block(self) -> bool:
         if not self.next_tetrominoes:
             self.next_tetrominoes = self._generate_tetrominoes()
         self.block = Tetromino(*SPAWN_POS, self.next_tetrominoes.pop(), self.grid)
         if not self.block.place():
             self.block = None
-        self.block.move_down()
+        else:
+            self.block.move_down()
 
     def _hold_block(self):
         if self.block_held:
@@ -391,6 +392,9 @@ class Tetris:
             self._new_block()
             self.new_block = False
             self.block_held = False
+
+        if not self.block:
+            return
 
         millis = self.clock.tick(60)
         if not self.block_fall:
