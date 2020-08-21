@@ -182,18 +182,23 @@ class Tetromino:
         self.block = BLOCKS[block_type][:]
         self.grid = grid
         self.rotation = 0
+        self.placed = False
 
     def _can_place(self) -> bool:
-        return self._can_move(dx=0, dy=0)
+        return self.can_move(dx=0, dy=0)
 
-    def place(self) -> bool:
+    def place(self, *, test_place: bool = True) -> Optional[bool]:
         """
         Places the tetromino on the playing field
 
-        :return: Whether the placement was successful
-        :rtype: bool
+        :param test_place: Whether to test the placement, defaults to True
+        :type test_place: bool
+        :return: Whether the placement was successful, if test_place is True
+        :rtype: Optional[bool]
         """
-        if not self._can_place():
+        if self.placed:
+            return True
+        if test_place and not self._can_place():
             return False
         for y, row in enumerate(self.block):
             for x, square in enumerate(row):
@@ -203,10 +208,14 @@ class Tetromino:
                     and 0 <= self.y + y < ROWS
                 ):
                     self.grid[self.y + y][self.x + x] = self.block_type.value + 1
-        return True
+
+        self.placed = True
+        return True if test_place else None
 
     def remove(self):
         # Removes this shape from the grid
+        if not self.placed:
+            return
         for y, row in enumerate(self.block):
             for x, square in enumerate(row):
                 if (
@@ -215,9 +224,11 @@ class Tetromino:
                     and 0 <= self.y + y < ROWS
                 ):
                     self.grid[self.y + y][self.x + x] = 0
+        self.placed = False
 
-    def _can_move(self, dx: int, dy: int) -> bool:
+    def can_move(self, dx: int, dy: int) -> bool:
         # Determines whether this shape can move in a given direction
+        self.remove()
         for y, row in enumerate(self.block):
             for x, square in enumerate(row):
                 if not square == ".":
@@ -229,15 +240,17 @@ class Tetromino:
                     or not 0 <= new_y < ROWS
                     or self.grid[new_y][new_x] != 0
                 ):
+                    self.place(test_place=False)
                     return False
+        self.place(test_place=False)
         return True
 
     def _move(self, dx: int = 0, dy: int = 0, test_move: bool = True) -> Optional[bool]:
-        # Moves the block to the specified locaion
+        # Moves the block to the specified location
         # Returns if the operation succeeded, if test_move is True, otherwise None
-        self.remove()
         if test_move:
-            can_move = self._can_move(dx=dx, dy=dy)
+            can_move = self.can_move(dx=dx, dy=dy)
+        self.remove()
         if not test_move or can_move:
             self.x += dx
             self.y += dy
@@ -267,7 +280,7 @@ class Tetromino:
                 pass
             else:
                 for dx, dy in wall_kicks:
-                    if self._can_move(dx=dx, dy=dy):
+                    if self.can_move(dx=dx, dy=dy):
                         self._move(dx=dx, dy=dy, test_move=False)
                         return True
 
@@ -275,14 +288,16 @@ class Tetromino:
             return False
         return True
 
-    def move_down(self) -> bool:
+    def move_down(self, *, test_move: bool = True) -> bool:
         """
         Moves the tetromino down one block
 
+        :param test_move: Whether to test the move, defaults to True
+        :type test_move: bool
         :return: Whether the move was successful
         :rtype: bool
         """
-        return self._move(dy=1)
+        return self._move(dy=1, test_move=test_move)
 
     def move_left(self) -> bool:
         """
@@ -399,15 +414,19 @@ class Tetris:
         millis = self.clock.tick(60)
         if not self.block_fall:
             self.time += millis
-        self.lock_delay += millis
+        if self.lock_started:
+            self.lock_delay += millis
         if self.time >= self.fall_interval:
             self.block_fall = True
             self.time %= self.fall_interval
-        if self.block_fall:
-            moved = self.block.move_down()
-            if moved:
-                self.lock_delay = 0
+        if self.block.can_move(dx=0, dy=1):
+            self.lock_started = False
+            self.lock_delay = 0
+            if self.block_fall:
+                self.block.move_down(test_move=False)
             self.block_fall = False
+        else:
+            self.lock_started = True
         if self.lock_delay >= LOCK_DELAY:
             moved = self.block.move_down()
             self.new_block = not moved
@@ -429,6 +448,7 @@ class Tetris:
         self.clock = pygame.time.Clock()
         self.time = 0
         self.lock_delay = 0
+        self.lock_started = False
         self.block_fall = False
         self.new_block = True
         self.hold_block_type = None
