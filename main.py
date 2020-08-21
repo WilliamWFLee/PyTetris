@@ -336,6 +336,15 @@ class Tetromino:
         """
         return self._rotate(1)
 
+    def rotate_anticlockwise(self) -> bool:
+        """
+        Rotates the tetromino anticlockwise
+
+        :return: Whether the rotation was successful
+        :rtype: bool
+        """
+        return self._rotate(-1)
+
 
 class Tetris:
     """
@@ -486,6 +495,7 @@ class Tetris:
                             pygame.K_LEFT: self.block.move_left,
                             pygame.K_RIGHT: self.block.move_right,
                             pygame.K_z: self.block.rotate_clockwise,
+                            pygame.K_UP: self.block.rotate_anticlockwise,
                         }
                         if event.key in moves:
                             result = moves[event.key]()
