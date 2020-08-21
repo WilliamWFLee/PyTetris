@@ -326,7 +326,7 @@ class Tetromino:
         """
         self.remove()
         result = self._rotate(1)
-        self.place()
+        self.place(test_place=False)
 
         return result
 
@@ -389,6 +389,8 @@ class Tetris:
             self.block = None
         else:
             self.block.move_down()
+        self.fall_timer = 0
+        self.block_fall = False
 
     def _hold_block(self):
         if self.block_held:
@@ -413,14 +415,14 @@ class Tetris:
         if not self.block:
             return
 
-        millis = self.clock.tick(60)
+        millis = self.clock.tick()
         if not self.block_fall:
-            self.time += millis
+            self.fall_timer += millis
         if self.lock_started:
             self.lock_delay += millis
-        if self.time >= self.fall_interval:
+        if self.fall_timer >= self.fall_interval:
             self.block_fall = True
-            self.time %= self.fall_interval
+            self.fall_timer %= self.fall_interval
         if self.block.can_move(dx=0, dy=1):
             self.lock_started = False
             self.lock_delay = 0
@@ -448,7 +450,7 @@ class Tetris:
 
         self.fall_interval = 1000
         self.clock = pygame.time.Clock()
-        self.time = 0
+        self.fall_timer = 0
         self.lock_delay = 0
         self.lock_started = False
         self.block_fall = False
