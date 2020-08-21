@@ -366,8 +366,8 @@ class Tetris:
 
     def _new_block(self):
         if not self.next_tetrominoes:
-            next_tetrominoes = self._generate_tetrominoes()
-        self.block = Tetromino(*SPAWN_POS, next_tetrominoes.pop(), self.grid)
+            self.next_tetrominoes = self._generate_tetrominoes()
+        self.block = Tetromino(*SPAWN_POS, self.next_tetrominoes.pop(), self.grid)
         if not self.block.place():
             self.block = None
 
