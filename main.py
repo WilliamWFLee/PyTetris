@@ -70,6 +70,9 @@ WHITE = 3 * (255,)
 BLACK = 3 * (0,)
 GREY = 3 * (127,)
 
+# Line goal
+LINE_GOAL = 10
+
 
 class BlockType(Enum):
     """
@@ -444,8 +447,7 @@ class Tetris:
     Represents a game of Tetris
     """
 
-    def _clear_lines(self) -> int:
-        count = 0
+    def _clear_lines(self):
         for y, row in enumerate(self.grid):
             if all(square is not None for square in row):
                 self.grid = (
@@ -453,8 +455,11 @@ class Tetris:
                     + self.grid[:y]
                     + self.grid[y + 1 :]
                 )
-                count += 1
-        return count
+                self.current_line_count += 1
+        while self.current_line_count >= LINE_GOAL:
+            self.level += 1
+            self.current_line_count -= LINE_GOAL
+        self.fall_interval = 1000 * (0.8 - 0.007 * (self.level - 1)) ** (self.level - 1)
 
     @staticmethod
     def _generate_tetrominoes():  # Implements the Random Generator
@@ -473,22 +478,12 @@ class Tetris:
                     pygame.draw.rect(
                         grid_surface,
                         color,
-                        (
-                            x * SQUARE_SIZE,
-                            y * SQUARE_SIZE,
-                            SQUARE_SIZE,
-                            SQUARE_SIZE,
-                        ),
+                        (x * SQUARE_SIZE, y * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE,),
                     )
                     pygame.draw.rect(
                         grid_surface,
                         color,
-                        (
-                            x * SQUARE_SIZE,
-                            y * SQUARE_SIZE,
-                            SQUARE_SIZE,
-                            SQUARE_SIZE,
-                        ),
+                        (x * SQUARE_SIZE, y * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE,),
                     )
                 pygame.draw.rect(
                     grid_surface,
@@ -540,6 +535,8 @@ class Tetris:
         self.block = None
         self.game_over = False
         self.next_tetrominoes = []
+        self.level = 1
+        self.current_line_count = 0
 
         game_over = False
         while not game_over:
