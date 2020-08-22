@@ -44,13 +44,13 @@ LINE_WIDTH = 1
 # The length of time before a shape locks
 LOCK_DELAY = 500
 
-# Padding around the grid, as the number of squares,
-# left and right, and up and down respectively
-PADDING = (3, 4)
-
 # Named tuples to make things easier to read
 Dimensions = namedtuple("Dimensions", "width height")
 Position = namedtuple("Position", "x y")
+
+# Padding around the grid, as the number of squares,
+# left and right, and up and down respectively
+PADDING = Dimensions(3, 4)
 
 # The size of the display surface
 DISPLAY_SIZE = Dimensions(
@@ -60,6 +60,8 @@ DISPLAY_SIZE = Dimensions(
 PLAYFIELD_SIZE = Dimensions(COLUMNS * SQUARE_SIZE, ROWS * SQUARE_SIZE)
 # The visible size of the playfield
 VISIBLE_PLAYFIELD_SIZE = Dimensions(COLUMNS * SQUARE_SIZE, VISIBLE_ROWS * SQUARE_SIZE)
+# Size of text area at the bottom
+TEXT_AREA = Dimensions(PLAYFIELD_SIZE.width, PADDING.height * SQUARE_SIZE)
 # The position of the playfield relative to the display surface
 GRID_POS = Position(*(pad * SQUARE_SIZE for pad in PADDING))
 # The position that new tetrominoes appear
@@ -526,6 +528,27 @@ class Tetris:
 
         self.display.blit(grid_surface, GRID_POS)
 
+    def _draw_text(self):
+        # Creates a text surface to blit to
+        text_surface = pygame.Surface(TEXT_AREA, pygame.SRCALPHA)
+
+        # Label for the stats
+        label_stats = (("Level", self.level), ("Score", self.score))
+
+        # Width of each "cell"
+        width = text_surface.get_width() // len(label_stats)
+        height = text_surface.get_height()
+
+        for i, (label, stat) in enumerate(label_stats):
+            text = self.font.render(f"{label}: {stat}", True, BLACK)
+            x = i * width + (width - text.get_width()) // 2
+            y = (height - text.get_height()) // 2
+            text_surface.blit(text, (x, y))
+
+        self.display.blit(
+            text_surface, (GRID_POS.x, GRID_POS.y + VISIBLE_PLAYFIELD_SIZE.height)
+        )
+
     def _new_block(self, block_type: Optional[BlockType] = None):
         if block_type is None:
             if not self.next_tetrominoes:
@@ -554,6 +577,9 @@ class Tetris:
 
     def _run_game(self):
         # Returns whether to the game is still to run
+
+        self.font = pygame.font.SysFont("Arial", 20)
+
         self.grid = [[None for x in range(COLUMNS)] for y in range(ROWS)]
         self.fall_interval = 1000
         self.clock = pygame.time.Clock()
@@ -646,6 +672,7 @@ class Tetris:
     def render(self):
         self.display.fill(WHITE)
         self._draw_grid()
+        self._draw_text()
 
     def run(self):
         pygame.init()
