@@ -43,6 +43,7 @@ LINE_WIDTH = 1
 
 # The length of time before a shape locks
 LOCK_DELAY = 500
+NEW_BLOCK_DELAY = 200
 
 # Named tuples to make things easier to read
 Dimensions = namedtuple("Dimensions", "width height")
@@ -488,6 +489,7 @@ class Tetris:
     def _hard_drop(self):
         lines = self.block.hard_drop()
         self._increase_score(hard_drop_cells=lines)
+        self.block = None
         self.new_block = True
 
     def _soft_drop(self):
@@ -584,7 +586,8 @@ class Tetris:
         self.fall_interval = 1000
         self.clock = pygame.time.Clock()
         self.fall_timer = 0
-        self.lock_delay = 0
+        self.lock_timer = 0
+        self.new_block_timer = NEW_BLOCK_DELAY
         self.lock_started = False
         self.block_fall = False
         self.new_block = True
@@ -621,41 +624,46 @@ class Tetris:
                         if event.key in moves:
                             result = moves[event.key]()
                             if result:
-                                self.lock_delay = 0
-            if self.new_block:
-                lines = self._clear_lines()
-                self._calculate_level(lines)
-                self._increase_score(lines=lines)
+                                self.lock_timer = 0
+            if self.new_block and self.new_block_timer >= NEW_BLOCK_DELAY:
                 self._new_block()
                 self.new_block = False
                 self.block_held = False
+                self.new_block_timer = 0
                 if self.block is None:
                     game_over = True
 
             if game_over:
                 break
 
+            millis = self.clock.tick()
+            if self.new_block:
+                self.new_block_timer += millis
             if self.block:
-                millis = self.clock.tick()
                 if not self.block_fall:
                     self.fall_timer += millis
                 if self.lock_started:
-                    self.lock_delay += millis
+                    self.lock_timer += millis
                 if self.fall_timer >= self.fall_interval:
                     self.block_fall = True
                     self.fall_timer %= self.fall_interval
                 if self.block.can_move(dx=0, dy=1):
                     self.lock_started = False
-                    self.lock_delay = 0
+                    self.lock_timer = 0
                     if self.block_fall:
                         self.block.move_down(test_move=False)
                     self.block_fall = False
                 else:
                     self.lock_started = True
-                if self.lock_delay >= LOCK_DELAY:
+                if self.lock_timer >= LOCK_DELAY:
                     moved = self.block.move_down()
+                    self.block = None
                     self.new_block = not moved
-                    self.lock_delay = 0
+                    self.lock_timer = 0
+            else:
+                lines = self._clear_lines()
+                self._calculate_level(lines)
+                self._increase_score(lines=lines)
             self.render()
             pygame.display.update()
         return True
