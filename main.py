@@ -28,7 +28,7 @@ SOFTWARE.
 """
 
 import random
-from collections import namedtuple
+from collections import namedtuple, defaultdict
 from enum import Enum
 from typing import List, Optional, Tuple
 
@@ -38,7 +38,7 @@ import pygame
 VISIBLE_ROWS = 20
 ROWS = 40
 COLUMNS = 10
-SQUARE_SIZE = 30
+SQUARE_SIZE = 25
 LINE_WIDTH = 1
 
 # The length of time before a shape locks
@@ -70,8 +70,10 @@ WHITE = 3 * (255,)
 BLACK = 3 * (0,)
 GREY = 3 * (127,)
 
-# Line goal
-LINE_GOAL = 10
+# The number of lines to clear per level
+LINE_GOAL_MULTIPILER = 5
+
+ADJUSTED_LINE_SCORE = defaultdict(lambda: 0, {1: 1, 2: 3, 3: 5, 4: 8})
 
 
 class BlockType(Enum):
@@ -342,9 +344,13 @@ class TetrominoBase:
         """
         return self._move(dy=1, test_move=test_move)
 
-    def hard_drop(self):
-        while self._move(dy=1):
-            pass
+    def hard_drop(self) -> int:
+        lines = 0
+        while True:
+            if not self._move(dy=1):
+                break
+            lines += 1
+        return lines
 
 
 class GhostPiece(TetrominoBase):
@@ -447,7 +453,8 @@ class Tetris:
     Represents a game of Tetris
     """
 
-    def _clear_lines(self):
+    def _clear_lines(self) -> int:
+        count = 0
         for y, row in enumerate(self.grid):
             if all(square is not None for square in row):
                 self.grid = (
@@ -455,11 +462,36 @@ class Tetris:
                     + self.grid[:y]
                     + self.grid[y + 1 :]
                 )
-                self.current_line_count += 1
-        while self.current_line_count >= LINE_GOAL:
+                count += 1
+        return count
+
+    def _calculate_level(self, lines: int):
+        if not lines:
+            return
+        self.current_line_count += ADJUSTED_LINE_SCORE[lines]
+        while self.current_line_count >= self.level * LINE_GOAL_MULTIPILER:
+            self.current_line_count -= self.level * LINE_GOAL_MULTIPILER
             self.level += 1
-            self.current_line_count -= LINE_GOAL
         self.fall_interval = 1000 * (0.8 - 0.007 * (self.level - 1)) ** (self.level - 1)
+
+    def _increase_score(
+        self, *, lines: int = 0, soft_drop_cells: int = 0, hard_drop_cells: int = 0,
+    ):
+        self.score += (
+            (100 * ADJUSTED_LINE_SCORE[lines]) * self.level
+            + soft_drop_cells
+            + 2 * hard_drop_cells
+        )
+
+    def _hard_drop(self):
+        lines = self.block.hard_drop()
+        self._increase_score(hard_drop_cells=lines)
+        self.new_block = True
+
+    def _soft_drop(self):
+        self.block.move_down()
+        self._increase_score(soft_drop_cells=1)
+        self.block_fall = False
 
     @staticmethod
     def _generate_tetrominoes():  # Implements the Random Generator
@@ -537,6 +569,7 @@ class Tetris:
         self.next_tetrominoes = []
         self.level = 1
         self.current_line_count = 0
+        self.score = 0
 
         game_over = False
         while not game_over:
@@ -547,10 +580,9 @@ class Tetris:
                     continue
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_DOWN:
-                        self.block_fall = True
+                        self._soft_drop()
                     elif event.key == pygame.K_SPACE:
-                        self.block.hard_drop()
-                        self.new_block = True
+                        self._hard_drop()
                     elif event.key == pygame.K_c:
                         self._hold_block()
                     else:
@@ -565,7 +597,9 @@ class Tetris:
                             if result:
                                 self.lock_delay = 0
             if self.new_block:
-                self._clear_lines()
+                lines = self._clear_lines()
+                self._calculate_level(lines)
+                self._increase_score(lines=lines)
                 self._new_block()
                 self.new_block = False
                 self.block_held = False
