@@ -173,11 +173,12 @@ BLOCKS = {
                        "   "],
 }
 # fmt: on
+Color = Tuple[int, int, int]
 
 
-class Tetromino:
+class TetrominoBase:
     """
-    Represents a Tetris tetromino
+    Base class for tetrominoes
     """
 
     def __init__(
@@ -185,8 +186,8 @@ class Tetromino:
         x: int,
         y: int,
         block_type: BlockType,
-        color: Tuple[int, int, int],
-        grid: List[List[int]],
+        color: Color,
+        grid: List[List[Color]],
     ):
         self.x = x
         self.y = y
@@ -200,12 +201,16 @@ class Tetromino:
     def _can_place(self) -> bool:
         return self.can_move(dx=0, dy=0)
 
-    def place(self, *, test_place: bool = True) -> Optional[bool]:
+    def place(
+        self, *, test_place: bool = True, skip_non_empty: bool = False
+    ) -> Optional[bool]:
         """
         Places the tetromino on the playing field
 
         :param test_place: Whether to test the placement, defaults to True
         :type test_place: bool
+        :param skip_non_empty: Whether non-empty squares are skipped, defaults to False. Implies test_place is False.
+        :type skip_non_empty: bool
         :return: Whether the placement was successful, if test_place is True
         :rtype: Optional[bool]
         """
@@ -215,12 +220,13 @@ class Tetromino:
             return False
         for y, row in enumerate(self.block):
             for x, square in enumerate(row):
-                if (
-                    square == "."
-                    and 0 <= self.x + x < COLUMNS
-                    and 0 <= self.y + y < ROWS
-                ):
-                    self.grid[self.y + y][self.x + x] = self.color
+                bx = self.x + x
+                by = self.y + y
+                if square == "." and 0 <= bx < COLUMNS and 0 <= by < ROWS:
+                    if self.grid[by][bx] is None or (
+                        self.grid[by][bx] is not None and not skip_non_empty
+                    ):
+                        self.grid[by][bx] = self.color
 
         self.placed = True
         return True if test_place else None
@@ -235,6 +241,7 @@ class Tetromino:
                     square == "."
                     and 0 <= self.x + x < COLUMNS
                     and 0 <= self.y + y < ROWS
+                    and self.grid[self.y + y][self.x + x] == self.color
                 ):
                     self.grid[self.y + y][self.x + x] = None
         self.placed = False
@@ -253,7 +260,10 @@ class Tetromino:
                 if (
                     not 0 <= new_x < COLUMNS
                     or not 0 <= new_y < ROWS
-                    or self.grid[new_y][new_x] is not None
+                    or (
+                        self.grid[new_y][new_x] is not None
+                        and all(v >= 0 for v in self.grid[new_y][new_x])
+                    )
                 ):
                     break
             else:
@@ -270,21 +280,25 @@ class Tetromino:
         # Returns if the operation succeeded, if test_move is True, otherwise None
         if test_move:
             can_move = self.can_move(dx=dx, dy=dy)
+        was_placed = self.placed
         self.remove()
         if not test_move or can_move:
             self.x += dx
             self.y += dy
-        self.place()
+        if was_placed:
+            self.place()
 
         return can_move if test_move else None
 
-    def _rotate(self, amount: int) -> bool:
+    def _rotate(self, amount: int, *, test_rotation: bool = True) -> bool:
         # Rotates a shape by a certain amount
         # Rotations as multiples of 90 degrees clockwise, so a rotation of 1
         # is 90 degrees clockwise, -1 is 90 degrees anticlockwise
         if self.block_type == BlockType.OBlock:
             return True
-        self.remove()
+        was_placed = self.placed
+        if was_placed:
+            self.remove()
         amount %= 4
         old_rotation = self.rotation
         self.rotation = (self.rotation + amount) % 4
@@ -294,7 +308,8 @@ class Tetromino:
                 for x in range(len(self.block[0]))
             ]
 
-        if not self._can_place():  # Normal rotation cannot be performed
+        if test_rotation and not self._can_place():
+            # Normal rotation cannot be performed
             try:
                 wall_kicks = WALL_KICKS[self.block_type][old_rotation][self.rotation]
             except KeyError:
@@ -306,9 +321,11 @@ class Tetromino:
                         return True
 
             self._rotate(-amount)  # Undoes the rotation
-            self.place()
+            if was_placed:
+                self.place()
             return False
-        self.place()
+        if was_placed:
+            self.place()
         return True
 
     def move_down(self, *, test_move: bool = True) -> bool:
@@ -322,6 +339,58 @@ class Tetromino:
         """
         return self._move(dy=1, test_move=test_move)
 
+    def hard_drop(self):
+        while self._move(dy=1):
+            pass
+
+
+class GhostPiece(TetrominoBase):
+    """
+    Represents the Ghost Piece of a tetromino
+    """
+
+    def __init__(
+        self,
+        x: int,
+        y: int,
+        block_type: BlockType,
+        color: Color,
+        grid: List[List[Color]],
+        rotation: int = 0,
+    ):
+        color = tuple(-v for v in color)
+        super().__init__(x, y, block_type, color, grid)
+        self._rotate(rotation, test_rotation=False)
+        self.hard_drop()
+
+    def place(self, *args, **kwargs):
+        return super().place(test_place=False, skip_non_empty=True)
+
+
+class Tetromino(TetrominoBase):
+    """
+    Represents a Tetris tetromino
+    """
+
+    def __init__(self, x, y, block_type, color, grid):
+        super().__init__(x, y, block_type, color, grid)
+        self.ghost_piece = GhostPiece(x, y, block_type, color, grid)
+        self.ghost_piece.place()
+
+    def renew_ghost_piece(method):  # noqa
+        def inner(self, *args, **kwargs):
+            method(self, *args, **kwargs)
+            self.remove()
+            self.ghost_piece.remove()
+            self.ghost_piece = GhostPiece(
+                self.x, self.y, self.block_type, self.color, self.grid, self.rotation
+            )
+            self.ghost_piece.place()
+            self.place()
+
+        return inner
+
+    @renew_ghost_piece
     def move_left(self) -> bool:
         """
         Moves the tetromino left one block
@@ -331,6 +400,7 @@ class Tetromino:
         """
         return self._move(dx=-1)
 
+    @renew_ghost_piece
     def move_right(self) -> bool:
         """
         Moves the tetromino right one block
@@ -340,6 +410,7 @@ class Tetromino:
         """
         return self._move(dx=1)
 
+    @renew_ghost_piece
     def rotate_clockwise(self) -> bool:
         """
         Rotates the tetromino clockwise
@@ -349,6 +420,7 @@ class Tetromino:
         """
         return self._rotate(1)
 
+    @renew_ghost_piece
     def rotate_anticlockwise(self) -> bool:
         """
         Rotates the tetromino anticlockwise
@@ -357,6 +429,14 @@ class Tetromino:
         :rtype: bool
         """
         return self._rotate(-1)
+
+    @renew_ghost_piece
+    def move_down(self, *, test_move: bool = True):
+        return super().move_down(test_move=test_move)
+
+    def delete(self):
+        self.remove()
+        self.ghost_piece.remove()
 
 
 class Tetris:
@@ -369,15 +449,12 @@ class Tetris:
         for y, row in enumerate(self.grid):
             if all(square is not None for square in row):
                 self.grid = (
-                    [[None for _ in range(COLUMNS)]] + self.grid[:y] + self.grid[y + 1 :]
+                    [[None for _ in range(COLUMNS)]]
+                    + self.grid[:y]
+                    + self.grid[y + 1 :]
                 )
                 count += 1
         return count
-
-    def _hard_drop(self):
-        while self.block.move_down():
-            pass
-        self.new_block = True
 
     @staticmethod
     def _generate_tetrominoes():  # Implements the Random Generator
@@ -391,10 +468,27 @@ class Tetris:
         for y, row in enumerate(self.grid[-VISIBLE_ROWS:]):
             for x, color in enumerate(row):
                 if color is not None:
+                    if all(v <= 0 for v in color):
+                        color = tuple(-v // 2 for v in color)
                     pygame.draw.rect(
                         grid_surface,
                         color,
-                        (x * SQUARE_SIZE, y * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE,),
+                        (
+                            x * SQUARE_SIZE,
+                            y * SQUARE_SIZE,
+                            SQUARE_SIZE,
+                            SQUARE_SIZE,
+                        ),
+                    )
+                    pygame.draw.rect(
+                        grid_surface,
+                        color,
+                        (
+                            x * SQUARE_SIZE,
+                            y * SQUARE_SIZE,
+                            SQUARE_SIZE,
+                            SQUARE_SIZE,
+                        ),
                     )
                 pygame.draw.rect(
                     grid_surface,
@@ -421,7 +515,7 @@ class Tetris:
     def _hold_block(self):
         if self.block_held:
             return
-        self.block.remove()
+        self.block.delete()
         if self.hold_block_type is None:
             self.hold_block_type = self.block.block_type
             self._new_block()
@@ -458,7 +552,8 @@ class Tetris:
                     if event.key == pygame.K_DOWN:
                         self.block_fall = True
                     elif event.key == pygame.K_SPACE:
-                        self._hard_drop()
+                        self.block.hard_drop()
+                        self.new_block = True
                     elif event.key == pygame.K_c:
                         self._hold_block()
                     else:
