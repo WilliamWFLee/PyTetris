@@ -94,13 +94,13 @@ class BlockType(Enum):
 
 
 COLORS = {
-    BlockType.IBlock: (255, 0, 255),
-    BlockType.JBlock: (255, 255, 0),
-    BlockType.LBlock: (160, 32, 240),
-    BlockType.OBlock: (0, 255, 0),
-    BlockType.SBlock: (255, 0, 0),
-    BlockType.TBlock: (0, 0, 255),
-    BlockType.ZBlock: (255, 165, 0),
+    BlockType.IBlock: (0, 255, 255),
+    BlockType.JBlock: (0, 0, 255),
+    BlockType.LBlock: (255, 165, 0),
+    BlockType.OBlock: (255, 255, 0),
+    BlockType.SBlock: (0, 255, 0),
+    BlockType.TBlock: (160, 32, 240),
+    BlockType.ZBlock: (255, 0, 0),
 }
 
 
