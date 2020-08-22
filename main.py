@@ -30,7 +30,7 @@ SOFTWARE.
 import random
 from collections import namedtuple
 from enum import Enum
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 import pygame
 
@@ -70,12 +70,6 @@ WHITE = 3 * (255,)
 BLACK = 3 * (0,)
 GREY = 3 * (127,)
 
-# Colors of the tetrominoes
-COLORS = tuple(
-    pygame.Color(color)
-    for color in ("cyan", "yellow", "purple", "green", "red", "blue", "orange")
-)
-
 
 class BlockType(Enum):
     """
@@ -89,6 +83,17 @@ class BlockType(Enum):
     SBlock = 4
     TBlock = 5
     ZBlock = 6
+
+
+COLORS = {
+    BlockType.IBlock: (255, 0, 255),
+    BlockType.JBlock: (255, 255, 0),
+    BlockType.LBlock: (160, 32, 240),
+    BlockType.OBlock: (0, 255, 0),
+    BlockType.SBlock: (255, 0, 0),
+    BlockType.TBlock: (0, 0, 255),
+    BlockType.ZBlock: (255, 165, 0),
+}
 
 
 # Wall kick definitions
@@ -175,13 +180,21 @@ class Tetromino:
     Represents a Tetris tetromino
     """
 
-    def __init__(self, x: int, y: int, block_type: BlockType, grid: List[List[int]]):
+    def __init__(
+        self,
+        x: int,
+        y: int,
+        block_type: BlockType,
+        color: Tuple[int, int, int],
+        grid: List[List[int]],
+    ):
         self.x = x
         self.y = y
         self.block_type = block_type
         self.block = BLOCKS[block_type][:]
         self.grid = grid
         self.rotation = 0
+        self.color = color
         self.placed = False
 
     def _can_place(self) -> bool:
@@ -207,7 +220,7 @@ class Tetromino:
                     and 0 <= self.x + x < COLUMNS
                     and 0 <= self.y + y < ROWS
                 ):
-                    self.grid[self.y + y][self.x + x] = self.block_type.value + 1
+                    self.grid[self.y + y][self.x + x] = self.color
 
         self.placed = True
         return True if test_place else None
@@ -223,7 +236,7 @@ class Tetromino:
                     and 0 <= self.x + x < COLUMNS
                     and 0 <= self.y + y < ROWS
                 ):
-                    self.grid[self.y + y][self.x + x] = 0
+                    self.grid[self.y + y][self.x + x] = None
         self.placed = False
 
     def can_move(self, dx: int, dy: int) -> bool:
@@ -240,7 +253,7 @@ class Tetromino:
                 if (
                     not 0 <= new_x < COLUMNS
                     or not 0 <= new_y < ROWS
-                    or self.grid[new_y][new_x] != 0
+                    or self.grid[new_y][new_x] is not None
                 ):
                     break
             else:
@@ -354,9 +367,9 @@ class Tetris:
     def _clear_lines(self) -> int:
         count = 0
         for y, row in enumerate(self.grid):
-            if all(square != 0 for square in row):
+            if all(square is not None for square in row):
                 self.grid = (
-                    [[0 for _ in range(COLUMNS)]] + self.grid[:y] + self.grid[y + 1 :]
+                    [[None for _ in range(COLUMNS)]] + self.grid[:y] + self.grid[y + 1 :]
                 )
                 count += 1
         return count
@@ -376,11 +389,11 @@ class Tetris:
         # Draws the grid and the squares on the board
         grid_surface = pygame.Surface(VISIBLE_PLAYFIELD_SIZE)
         for y, row in enumerate(self.grid[-VISIBLE_ROWS:]):
-            for x, square in enumerate(row):
-                if square:
+            for x, color in enumerate(row):
+                if color is not None:
                     pygame.draw.rect(
                         grid_surface,
-                        COLORS[square - 1],
+                        color,
                         (x * SQUARE_SIZE, y * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE,),
                     )
                 pygame.draw.rect(
@@ -397,7 +410,7 @@ class Tetris:
             if not self.next_tetrominoes:
                 self.next_tetrominoes = self._generate_tetrominoes()
             block_type = self.next_tetrominoes.pop()
-        self.block = Tetromino(*SPAWN_POS, block_type, self.grid)
+        self.block = Tetromino(*SPAWN_POS, block_type, COLORS[block_type], self.grid)
         if not self.block.place():
             self.block = None
         else:
@@ -420,7 +433,7 @@ class Tetris:
 
     def _run_game(self):
         # Returns whether to the game is still to run
-        self.grid = [[0 for x in range(COLUMNS)] for y in range(ROWS)]
+        self.grid = [[None for x in range(COLUMNS)] for y in range(ROWS)]
         self.fall_interval = 1000
         self.clock = pygame.time.Clock()
         self.fall_timer = 0
