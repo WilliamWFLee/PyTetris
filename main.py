@@ -51,7 +51,10 @@ Position = namedtuple("Position", "x y")
 
 # Padding around the grid, as the number of squares,
 # left and right, and up and down respectively
-PADDING = Dimensions(6, 4)
+PADDING = Dimensions(8, 4)
+
+# Hold box size
+HOLD_BOX_SIZE = Dimensions(6, 6)
 
 # The size of the display surface
 DISPLAY_SIZE = Dimensions(
@@ -503,34 +506,69 @@ class Tetris:
         random.shuffle(tetrominoes)
         return tetrominoes
 
+    @staticmethod
+    def _draw_grid_square(
+        surface: pygame.Surface, color: Optional[Color], x: int, y: int
+    ):
+        x *= SQUARE_SIZE
+        y *= SQUARE_SIZE
+        if color is not None:
+            if all(v <= 0 for v in color):
+                color = tuple(-v // 2 for v in color)
+            pygame.draw.rect(
+                surface, color, (x, y, SQUARE_SIZE, SQUARE_SIZE),
+            )
+            pygame.draw.rect(
+                surface, color, (x, y, SQUARE_SIZE, SQUARE_SIZE),
+            )
+        pygame.draw.rect(
+            surface, GREY, (x, y, SQUARE_SIZE, SQUARE_SIZE), LINE_WIDTH,
+        )
+
     def _draw_grid(self):
         # Draws the grid and the squares on the board
         grid_surface = pygame.Surface(VISIBLE_PLAYFIELD_SIZE)
         for y, row in enumerate(self.grid[-VISIBLE_ROWS:]):
             for x, color in enumerate(row):
-                if color is not None:
-                    if all(v <= 0 for v in color):
-                        color = tuple(-v // 2 for v in color)
-                    pygame.draw.rect(
-                        grid_surface,
-                        color,
-                        (x * SQUARE_SIZE, y * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE,),
-                    )
-                    pygame.draw.rect(
-                        grid_surface,
-                        color,
-                        (x * SQUARE_SIZE, y * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE,),
-                    )
-                pygame.draw.rect(
-                    grid_surface,
-                    GREY,
-                    (x * SQUARE_SIZE, y * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE,),
-                    LINE_WIDTH,
-                )
+                self._draw_grid_square(grid_surface, color, x, y)
 
         self.display.blit(grid_surface, GRID_POS)
 
-    def _draw_text(self):
+    def _draw_hold(self):
+        # Draw the hold grid
+        hold_surface = pygame.Surface(
+            (HOLD_BOX_SIZE.width * SQUARE_SIZE, HOLD_BOX_SIZE.height * SQUARE_SIZE)
+        )
+        for y in range(HOLD_BOX_SIZE.height):
+            for x in range(HOLD_BOX_SIZE.width):
+                color = None
+                if self.hold_block_type is not None:
+                    block = BLOCKS[self.hold_block_type]
+                    if (
+                        0 <= y - 1 < len(block)
+                        and 0 <= x - 1 < len(block[y - 1])
+                        and block[y - 1][x - 1] == "."
+                    ):
+                        color = COLORS[self.hold_block_type]
+                self._draw_grid_square(hold_surface, color, x, y)
+
+        hold_x = (PADDING.width - HOLD_BOX_SIZE.width) * SQUARE_SIZE // 2
+        hold_y = (PADDING.height) * SQUARE_SIZE
+        self.display.blit(hold_surface, (hold_x, hold_y))
+
+        # Draw the hold label
+        hold_label_surface = pygame.Surface(
+            (HOLD_BOX_SIZE.width * SQUARE_SIZE, PADDING.height * SQUARE_SIZE),
+            pygame.SRCALPHA,
+        )
+        hold_label = self.font.render("Hold Box", True, BLACK)
+        label_x = (hold_label_surface.get_width() - hold_label.get_width()) // 2
+        label_y = (hold_label_surface.get_height() - hold_label.get_height()) // 2
+
+        hold_label_surface.blit(hold_label, (label_x, label_y))
+        self.display.blit(hold_label_surface, (hold_x, 0))
+
+    def _draw_stats(self):
         # Creates a text surface to blit to
         text_surface = pygame.Surface(TEXT_AREA, pygame.SRCALPHA)
 
@@ -680,7 +718,8 @@ class Tetris:
     def render(self):
         self.display.fill(WHITE)
         self._draw_grid()
-        self._draw_text()
+        self._draw_stats()
+        self._draw_hold()
 
     def run(self):
         pygame.init()
