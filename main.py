@@ -51,7 +51,7 @@ Position = namedtuple("Position", "x y")
 
 # Padding around the grid, as the number of squares,
 # left and right, and up and down respectively
-PADDING = Dimensions(3, 4)
+PADDING = Dimensions(5, 6)
 
 # The size of the display surface
 DISPLAY_SIZE = Dimensions(
