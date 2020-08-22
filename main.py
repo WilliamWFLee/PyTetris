@@ -535,14 +535,14 @@ class Tetris:
         text_surface = pygame.Surface(TEXT_AREA, pygame.SRCALPHA)
 
         # Label for the stats
-        label_stats = (("Level", self.level), ("Score", self.score))
+        texts = (f"Level: {self.level}", f"Score: {self.score}")
 
         # Width of each "cell"
-        width = text_surface.get_width() // len(label_stats)
+        width = text_surface.get_width() // len(texts)
         height = text_surface.get_height()
 
-        for i, (label, stat) in enumerate(label_stats):
-            text = self.font.render(f"{label}: {stat}", True, BLACK)
+        for i, label_text in enumerate(texts):
+            text = self.font.render(label_text, True, BLACK)
             x = i * width + (width - text.get_width()) // 2
             y = (height - text.get_height()) // 2
             text_surface.blit(text, (x, y))
