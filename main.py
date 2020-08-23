@@ -40,15 +40,69 @@ pygame.init()
 VISIBLE_ROWS = 20
 ROWS = 40
 COLUMNS = 10
-SQUARE_SIZE = 25
+SQUARE_WIDTH = 25
 LINE_WIDTH = 1
 
 # The length of time before a shape locks
 LOCK_DELAY = 500
 NEW_BLOCK_DELAY = 200
 
+
 # Named tuples to make things easier to read
-Dimensions = namedtuple("Dimensions", "width height")
+class Dimensions(namedtuple("Dimensions", "width height pwidth pheight")):  # noqa
+    """
+    Class for representing on-screen dimensions in units of grid square width
+
+    .. attribute:: width
+
+        The width in terms of grid squares
+
+        :type: int
+
+    .. attribute:: height
+
+        The height in terms of grid squares
+
+        :type: int
+
+    .. attribute:: pwidth
+
+        The width in terms of pixels
+
+        :type: int
+
+    .. attribute:: pheight
+
+        The height in terms of pixels
+
+        :type: int
+    """
+
+    def __new__(cls, *args, **kwargs):
+        """
+        Creates a new dimension specification
+
+        You should specify the width and height in units of grid square width.
+        These are automatically multiplied to give the width and height
+        in terms of pixels.
+
+        For example, where `SQUARE_WIDTH` equals 25,
+        >>> Dimensions(2, 4)
+        Dimensions(width=2, height=4, pwidth=50, pheight=100)
+        """
+        args = list(args) + [arg * SQUARE_WIDTH for arg in args]
+        kwargs.update({f"p{k}": v * SQUARE_WIDTH for k, v in kwargs.items()})
+        return super().__new__(cls, *args, **kwargs)
+
+    @property
+    def in_pixels(self):
+        return self.pwidth, self.pheight
+
+    @property
+    def in_squares(self):
+        return self.width, self.height
+
+
 Position = namedtuple("Position", "x y")
 
 # Padding around the grid, as the number of squares,
@@ -60,16 +114,16 @@ GRID_BOX_SIZE = Dimensions(6, 6)
 
 # The size of the display surface
 DISPLAY_SIZE = Dimensions(
-    *((v + 2 * pad) * SQUARE_SIZE for v, pad in zip((COLUMNS, VISIBLE_ROWS), PADDING))
+    COLUMNS + 2 * PADDING.width, VISIBLE_ROWS + 2 * PADDING.height
 )
 # The size of the playfield
-PLAYFIELD_SIZE = Dimensions(COLUMNS * SQUARE_SIZE, ROWS * SQUARE_SIZE)
+PLAYFIELD_SIZE = Dimensions(COLUMNS, ROWS)
 # The visible size of the playfield
-VISIBLE_PLAYFIELD_SIZE = Dimensions(COLUMNS * SQUARE_SIZE, VISIBLE_ROWS * SQUARE_SIZE)
+VISIBLE_PLAYFIELD_SIZE = Dimensions(COLUMNS, VISIBLE_ROWS)
 # Size of text area at the bottom
-TEXT_AREA = Dimensions(PLAYFIELD_SIZE.width, PADDING.height * SQUARE_SIZE)
+TEXT_AREA = Dimensions(COLUMNS, PADDING.height)
 # The position of the playfield relative to the display surface
-GRID_POS = Position(*(pad * SQUARE_SIZE for pad in PADDING))
+GRID_POS = Position(*PADDING.in_pixels)
 # The position that new tetrominoes appear
 SPAWN_POS = Position(3, 19)
 
@@ -515,24 +569,24 @@ class Tetris:
     def _draw_grid_square(
         surface: pygame.Surface, color: Optional[Color], x: int, y: int
     ):
-        x *= SQUARE_SIZE
-        y *= SQUARE_SIZE
+        x *= SQUARE_WIDTH
+        y *= SQUARE_WIDTH
         if color is not None:
             if all(v <= 0 for v in color):
                 color = tuple(-v // 2 for v in color)
             pygame.draw.rect(
-                surface, color, (x, y, SQUARE_SIZE, SQUARE_SIZE),
+                surface, color, (x, y, SQUARE_WIDTH, SQUARE_WIDTH),
             )
             pygame.draw.rect(
-                surface, color, (x, y, SQUARE_SIZE, SQUARE_SIZE),
+                surface, color, (x, y, SQUARE_WIDTH, SQUARE_WIDTH),
             )
         pygame.draw.rect(
-            surface, GREY, (x, y, SQUARE_SIZE, SQUARE_SIZE), LINE_WIDTH,
+            surface, GREY, (x, y, SQUARE_WIDTH, SQUARE_WIDTH), LINE_WIDTH,
         )
 
     def _draw_grid(self):
         # Draws the grid and the squares on the board
-        grid_surface = pygame.Surface(VISIBLE_PLAYFIELD_SIZE)
+        grid_surface = pygame.Surface(VISIBLE_PLAYFIELD_SIZE.in_pixels)
         for y, row in enumerate(self.grid[-VISIBLE_ROWS:]):
             for x, color in enumerate(row):
                 self._draw_grid_square(grid_surface, color, x, y)
@@ -541,9 +595,7 @@ class Tetris:
 
     @classmethod
     def _draw_grid_box(cls, block_type: Optional[BlockType] = None):
-        surface = pygame.Surface(
-            (GRID_BOX_SIZE.width * SQUARE_SIZE, GRID_BOX_SIZE.height * SQUARE_SIZE)
-        )
+        surface = pygame.Surface(GRID_BOX_SIZE.in_pixels)
         for y in range(GRID_BOX_SIZE.height):
             for x in range(GRID_BOX_SIZE.width):
                 color = None
@@ -561,8 +613,7 @@ class Tetris:
     @staticmethod
     def _draw_grid_box_label(text: str):
         label_surface = pygame.Surface(
-            (GRID_BOX_SIZE.width * SQUARE_SIZE, PADDING.height * SQUARE_SIZE),
-            pygame.SRCALPHA,
+            (GRID_BOX_SIZE.pwidth, PADDING.pheight), pygame.SRCALPHA,
         )
         label = FONT.render(text, True, BLACK)
         label_x = (label_surface.get_width() - label.get_width()) // 2
@@ -573,8 +624,8 @@ class Tetris:
 
     def _draw_hold(self):
         # Draw the hold grid
-        hold_x = (PADDING.width - GRID_BOX_SIZE.width) * SQUARE_SIZE // 2
-        hold_y = (PADDING.height) * SQUARE_SIZE
+        hold_x = (PADDING.pwidth - GRID_BOX_SIZE.pwidth) // 2
+        hold_y = PADDING.pheight
         hold_surface = self._draw_grid_box(self.hold_block_type)
         self.display.blit(hold_surface, (hold_x, hold_y))
 
@@ -584,7 +635,7 @@ class Tetris:
 
     def _draw_stats(self):
         # Creates a text surface to blit to
-        text_surface = pygame.Surface(TEXT_AREA, pygame.SRCALPHA)
+        text_surface = pygame.Surface(TEXT_AREA.in_pixels, pygame.SRCALPHA)
 
         # Label for the stats
         texts = (f"Level: {self.level}", f"Score: {self.score}")
@@ -600,7 +651,7 @@ class Tetris:
             text_surface.blit(text, (x, y))
 
         self.display.blit(
-            text_surface, (GRID_POS.x, GRID_POS.y + VISIBLE_PLAYFIELD_SIZE.height)
+            text_surface, (GRID_POS.x, GRID_POS.y + VISIBLE_PLAYFIELD_SIZE.pheight)
         )
 
     def _new_block(self, block_type: Optional[BlockType] = None):
@@ -734,7 +785,7 @@ class Tetris:
         self._draw_hold()
 
     def run(self):
-        self.display = pygame.display.set_mode(DISPLAY_SIZE)
+        self.display = pygame.display.set_mode(DISPLAY_SIZE.in_pixels)
         pygame.key.set_repeat(170, 50)
 
         while True:
