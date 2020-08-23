@@ -34,6 +34,8 @@ from typing import List, Optional, Tuple
 
 import pygame
 
+pygame.init()
+
 # Various game dimensions
 VISIBLE_ROWS = 20
 ROWS = 40
@@ -53,8 +55,8 @@ Position = namedtuple("Position", "x y")
 # left and right, and up and down respectively
 PADDING = Dimensions(8, 4)
 
-# Hold box size
-HOLD_BOX_SIZE = Dimensions(6, 6)
+# Size of grid boxes - hold box and next piece preview
+GRID_BOX_SIZE = Dimensions(6, 6)
 
 # The size of the display surface
 DISPLAY_SIZE = Dimensions(
@@ -80,6 +82,9 @@ GREY = 3 * (127,)
 LINE_GOAL_MULTIPILER = 5
 
 ADJUSTED_LINE_SCORE = defaultdict(lambda: 0, {1: 1, 2: 3, 3: 5, 4: 8})
+
+# Text font
+FONT = pygame.font.SysFont("Arial", 20)
 
 
 class BlockType(Enum):
@@ -534,38 +539,47 @@ class Tetris:
 
         self.display.blit(grid_surface, GRID_POS)
 
-    def _draw_hold(self):
-        # Draw the hold grid
-        hold_surface = pygame.Surface(
-            (HOLD_BOX_SIZE.width * SQUARE_SIZE, HOLD_BOX_SIZE.height * SQUARE_SIZE)
+    @classmethod
+    def _draw_grid_box(cls, block_type: Optional[BlockType] = None):
+        surface = pygame.Surface(
+            (GRID_BOX_SIZE.width * SQUARE_SIZE, GRID_BOX_SIZE.height * SQUARE_SIZE)
         )
-        for y in range(HOLD_BOX_SIZE.height):
-            for x in range(HOLD_BOX_SIZE.width):
+        for y in range(GRID_BOX_SIZE.height):
+            for x in range(GRID_BOX_SIZE.width):
                 color = None
-                if self.hold_block_type is not None:
-                    block = BLOCKS[self.hold_block_type]
+                if block_type is not None:
+                    block = BLOCKS[block_type]
                     if (
                         0 <= y - 1 < len(block)
                         and 0 <= x - 1 < len(block[y - 1])
                         and block[y - 1][x - 1] == "."
                     ):
-                        color = COLORS[self.hold_block_type]
-                self._draw_grid_square(hold_surface, color, x, y)
+                        color = COLORS[block_type]
+                cls._draw_grid_square(surface, color, x, y)
+        return surface
 
-        hold_x = (PADDING.width - HOLD_BOX_SIZE.width) * SQUARE_SIZE // 2
+    @staticmethod
+    def _draw_grid_box_label(text: str):
+        label_surface = pygame.Surface(
+            (GRID_BOX_SIZE.width * SQUARE_SIZE, PADDING.height * SQUARE_SIZE),
+            pygame.SRCALPHA,
+        )
+        label = FONT.render(text, True, BLACK)
+        label_x = (label_surface.get_width() - label.get_width()) // 2
+        label_y = (label_surface.get_height() - label.get_height()) // 2
+
+        label_surface.blit(label, (label_x, label_y))
+        return label_surface
+
+    def _draw_hold(self):
+        # Draw the hold grid
+        hold_x = (PADDING.width - GRID_BOX_SIZE.width) * SQUARE_SIZE // 2
         hold_y = (PADDING.height) * SQUARE_SIZE
+        hold_surface = self._draw_grid_box(self.hold_block_type)
         self.display.blit(hold_surface, (hold_x, hold_y))
 
         # Draw the hold label
-        hold_label_surface = pygame.Surface(
-            (HOLD_BOX_SIZE.width * SQUARE_SIZE, PADDING.height * SQUARE_SIZE),
-            pygame.SRCALPHA,
-        )
-        hold_label = self.font.render("Hold Box", True, BLACK)
-        label_x = (hold_label_surface.get_width() - hold_label.get_width()) // 2
-        label_y = (hold_label_surface.get_height() - hold_label.get_height()) // 2
-
-        hold_label_surface.blit(hold_label, (label_x, label_y))
+        hold_label_surface = self._draw_grid_box_label("Hold Box")
         self.display.blit(hold_label_surface, (hold_x, 0))
 
     def _draw_stats(self):
@@ -580,7 +594,7 @@ class Tetris:
         height = text_surface.get_height()
 
         for i, label_text in enumerate(texts):
-            text = self.font.render(label_text, True, BLACK)
+            text = FONT.render(label_text, True, BLACK)
             x = i * width + (width - text.get_width()) // 2
             y = (height - text.get_height()) // 2
             text_surface.blit(text, (x, y))
@@ -591,8 +605,8 @@ class Tetris:
 
     def _new_block(self, block_type: Optional[BlockType] = None):
         if block_type is None:
-            if not self.next_tetrominoes:
-                self.next_tetrominoes = self._generate_tetrominoes()
+            if len(self.next_tetrominoes) < 7:
+                self.next_tetrominoes += self._generate_tetrominoes()
             block_type = self.next_tetrominoes.pop()
         self.block = Tetromino(*SPAWN_POS, block_type, COLORS[block_type], self.grid)
         if not self.block.place():
@@ -617,8 +631,6 @@ class Tetris:
 
     def _run_game(self):
         # Returns whether to the game is still to run
-
-        self.font = pygame.font.SysFont("Arial", 20)
 
         self.grid = [[None for x in range(COLUMNS)] for y in range(ROWS)]
         self.fall_interval = 1000
@@ -722,7 +734,6 @@ class Tetris:
         self._draw_hold()
 
     def run(self):
-        pygame.init()
         self.display = pygame.display.set_mode(DISPLAY_SIZE)
         pygame.key.set_repeat(170, 50)
 
