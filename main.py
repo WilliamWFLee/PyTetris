@@ -843,6 +843,7 @@ class Tetris:
 
     def run(self):
         self.display = pygame.display.set_mode(DISPLAY_SIZE.in_pixels)
+        pygame.display.set_caption("PyTetris")
 
         while True:
             run = self._run_game()
