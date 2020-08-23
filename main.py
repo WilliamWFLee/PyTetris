@@ -637,6 +637,7 @@ class Tetris:
         self.display.blit(hold_label_surface, (hold_x, 0))
 
     def _draw_next_pieces(self):
+        # Draw the grids
         preview_x = (
             GRID_BOX_SIZE.pwidth + 2 * PADDING.pwidth - GRID_BOX_SIZE.pwidth // 2
         )
@@ -648,6 +649,10 @@ class Tetris:
             box_surface = self._draw_grid_box(self.next_tetrominoes[y])
             preview_surface.blit(box_surface, (0, GRID_BOX_SIZE.pheight * y))
         self.display.blit(preview_surface, (preview_x, preview_y))
+
+        # Draw label
+        preview_label_surface = self._draw_grid_box_label("Next Pieces")
+        self.display.blit(preview_label_surface, (preview_x, 0))
 
     def _draw_stats(self):
         # Creates a text surface to blit to
