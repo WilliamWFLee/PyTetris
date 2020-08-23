@@ -458,7 +458,7 @@ class Tetromino(TetrominoBase):
 
     def renew_ghost_piece(method):  # noqa
         def inner(self, *args, **kwargs):
-            method(self, *args, **kwargs)
+            ret = method(self, *args, **kwargs)
             self.remove()
             self.ghost_piece.remove()
             self.ghost_piece = GhostPiece(
@@ -466,6 +466,8 @@ class Tetromino(TetrominoBase):
             )
             self.ghost_piece.place()
             self.place()
+
+            return ret
 
         return inner
 
@@ -560,9 +562,9 @@ class Tetris:
         self.new_block = True
 
     def _soft_drop(self):
-        self.block.move_down()
-        self._increase_score(soft_drop_cells=1)
-        self.block_fall = False
+        if self.block.move_down():
+            self._increase_score(soft_drop_cells=1)
+            self.block_fall = False
 
     @staticmethod
     def _generate_tetrominoes():  # Implements the Random Generator
