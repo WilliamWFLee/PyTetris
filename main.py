@@ -137,6 +137,9 @@ LINE_GOAL_MULTIPILER = 5
 
 ADJUSTED_LINE_SCORE = defaultdict(lambda: 0, {1: 1, 2: 3, 3: 5, 4: 8})
 
+# Number of preview pieces
+PREVIEW_NUM = 3
+
 # Text font
 FONT = pygame.font.SysFont("Arial", 20)
 
@@ -633,6 +636,19 @@ class Tetris:
         hold_label_surface = self._draw_grid_box_label("Hold Box")
         self.display.blit(hold_label_surface, (hold_x, 0))
 
+    def _draw_next_pieces(self):
+        preview_x = (
+            GRID_BOX_SIZE.pwidth + 2 * PADDING.pwidth - GRID_BOX_SIZE.pwidth // 2
+        )
+        preview_y = PADDING.pheight
+        preview_surface = pygame.Surface(
+            (GRID_BOX_SIZE.pwidth, GRID_BOX_SIZE.pheight * PREVIEW_NUM)
+        )
+        for y in range(PREVIEW_NUM):
+            box_surface = self._draw_grid_box(self.next_tetrominoes[y])
+            preview_surface.blit(box_surface, (0, GRID_BOX_SIZE.pheight * y))
+        self.display.blit(preview_surface, (preview_x, preview_y))
+
     def _draw_stats(self):
         # Creates a text surface to blit to
         text_surface = pygame.Surface(TEXT_AREA.in_pixels, pygame.SRCALPHA)
@@ -658,7 +674,7 @@ class Tetris:
         if block_type is None:
             if len(self.next_tetrominoes) < 7:
                 self.next_tetrominoes += self._generate_tetrominoes()
-            block_type = self.next_tetrominoes.pop()
+            block_type = self.next_tetrominoes.pop(0)
         self.block = Tetromino(*SPAWN_POS, block_type, COLORS[block_type], self.grid)
         if not self.block.place():
             self.block = None
@@ -783,6 +799,7 @@ class Tetris:
         self._draw_grid()
         self._draw_stats()
         self._draw_hold()
+        self._draw_next_pieces()
 
     def run(self):
         self.display = pygame.display.set_mode(DISPLAY_SIZE.in_pixels)
