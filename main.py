@@ -791,7 +791,7 @@ class Tetris:
             for key in self.repeating_keys:
                 self.key_repeats_timers[key] += millis
                 delay, interval = KEY_REPEATS[key]
-                if self.key_repeats_timers[key] - delay > interval:
+                while self.key_repeats_timers[key] - delay > interval:
                     pygame.event.post(
                         pygame.event.Event(pygame.KEYDOWN, key=key, repeat=True)
                     )
