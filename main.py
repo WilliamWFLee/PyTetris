@@ -107,7 +107,7 @@ Position = namedtuple("Position", "x y")
 
 # Padding around the grid, as the number of squares,
 # left and right, and up and down respectively
-PADDING = Dimensions(8, 4)
+PADDING = Dimensions(12, 4)
 
 # Size of grid boxes - hold box and next piece preview
 GRID_BOX_SIZE = Dimensions(6, 6)
