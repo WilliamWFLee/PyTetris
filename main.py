@@ -143,6 +143,13 @@ PREVIEW_NUM = 3
 # Text font
 FONT = pygame.font.SysFont("Arial", 20)
 
+# Key repeat values
+KEY_REPEATS = {
+    pygame.K_LEFT: (170, 50),
+    pygame.K_RIGHT: (170, 50),
+    pygame.K_DOWN: (0, 50),
+}
+
 
 class BlockType(Enum):
     """
@@ -729,6 +736,9 @@ class Tetris:
         self.score = 0
         self.paused = False
 
+        self.repeating_keys = set()
+        self.key_repeats_timers = {k: 0 for k in KEY_REPEATS}
+
         game_over = False
         while not game_over:
             for event in pygame.event.get():
@@ -737,6 +747,8 @@ class Tetris:
                 elif self.block is None:
                     continue
                 if event.type == pygame.KEYDOWN:
+                    if event.key in KEY_REPEATS:
+                        self.repeating_keys.add(event.key)
                     if event.key == pygame.K_ESCAPE:
                         self.paused = not self.paused
                     elif event.key == pygame.K_DOWN:
@@ -756,6 +768,11 @@ class Tetris:
                             result = moves[event.key]()
                             if result:
                                 self.lock_timer = 0
+                elif event.type == pygame.KEYUP:
+                    if event.key in self.repeating_keys:
+                        self.repeating_keys.remove(event.key)
+                        self.key_repeats_timers[event.key] = 0
+
             if self.paused:
                 continue
 
@@ -771,6 +788,12 @@ class Tetris:
                 break
 
             millis = self.clock.tick()
+            for key in self.repeating_keys:
+                self.key_repeats_timers[key] += millis
+                delay, interval = KEY_REPEATS[key]
+                if self.key_repeats_timers[key] - delay > interval:
+                    pygame.event.post(pygame.event.Event(pygame.KEYDOWN, key=key))
+                    self.key_repeats_timers[key] -= interval
             if self.new_block:
                 self.new_block_timer += millis
             if self.block:
@@ -820,7 +843,6 @@ class Tetris:
 
     def run(self):
         self.display = pygame.display.set_mode(DISPLAY_SIZE.in_pixels)
-        pygame.key.set_repeat(170, 50)
 
         while True:
             run = self._run_game()
