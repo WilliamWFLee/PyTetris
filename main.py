@@ -639,7 +639,9 @@ class Tetris:
     def _draw_next_pieces(self):
         # Draw the grids
         preview_x = (
-            GRID_BOX_SIZE.pwidth + 2 * PADDING.pwidth - GRID_BOX_SIZE.pwidth // 2
+            PLAYFIELD_SIZE.pwidth
+            + PADDING.pwidth
+            + (PADDING.pwidth - GRID_BOX_SIZE.pwidth) // 2
         )
         preview_y = PADDING.pheight
         preview_surface = pygame.Surface(
