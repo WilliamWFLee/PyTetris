@@ -554,12 +554,18 @@ class Tetris:
         self.fall_interval = 1000 * (0.8 - 0.007 * (self.level - 1)) ** (self.level - 1)
 
     def _increase_score(
-        self, *, lines: int = 0, soft_drop_cells: int = 0, hard_drop_cells: int = 0,
+        self,
+        *,
+        lines: int = 0,
+        soft_drop_cells: int = 0,
+        hard_drop_cells: int = 0,
+        combo: int = 1,
     ):
         self.score += (
             (100 * ADJUSTED_LINE_SCORE[lines]) * self.level
             + soft_drop_cells
             + 2 * hard_drop_cells
+            + 50 * (combo - 1) * self.level
         )
 
     def _hard_drop(self):
@@ -735,6 +741,7 @@ class Tetris:
         self.current_line_count = 0
         self.score = 0
         self.paused = False
+        self.combo = 0
 
         self.repeating_keys = set()
         self.key_repeats_timers = {k: 0 for k in KEY_REPEATS}
@@ -821,8 +828,12 @@ class Tetris:
                     self.lock_timer = 0
             else:
                 lines = self._clear_lines()
-                self._calculate_level(lines)
-                self._increase_score(lines=lines)
+                if lines:
+                    self.combo += 1
+                    self._calculate_level(lines)
+                    self._increase_score(lines=lines, combo=self.combo)
+                else:
+                    self.combo = 0
             self.render()
             pygame.display.update()
         return True
