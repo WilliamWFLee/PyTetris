@@ -256,6 +256,16 @@ BLOCKS = {
 Color = Tuple[int, int, int]
 
 
+class Movement(Enum):
+    GRAVITY = 0
+    SOFT_DROP = 1
+    HARD_DROP = 2
+    LEFT = 3
+    RIGHT = 4
+    ROT_C = 5
+    ROT_AC = 6
+
+
 class TetrominoBase:
     """
     Base class for tetrominoes
@@ -567,11 +577,32 @@ class Tetris:
         lines = self.block.hard_drop()
         self._increase_score(hard_drop_cells=lines)
         self.new_block = True
+        self._on_lock()
 
     def _soft_drop(self):
         if self.block.move_down():
             self._increase_score(soft_drop_cells=1)
             self.block_fall = False
+
+    def _do_move(self, movement: Movement):
+        moves = {
+            Movement.SOFT_DROP: self._soft_drop,
+            Movement.HARD_DROP: self._hard_drop,
+            Movement.SOFT_DROP: self.block.move_down,
+            Movement.GRAVITY: self.block.move_down,
+            Movement.LEFT: self.block.move_left,
+            Movement.RIGHT: self.block.move_right,
+            Movement.ROT_C: self.block.rotate_clockwise,
+            Movement.ROT_AC: self.block.rotate_anticlockwise,
+        }
+        result = moves[movement]()
+        if result and movement in (
+            Movement.LEFT,
+            Movement.RIGHT,
+            Movement.ROT_C,
+            Movement.ROT_AC,
+        ):
+            self.lock_timer = 0
 
     @staticmethod
     def _generate_tetrominoes():  # Implements the Random Generator
@@ -717,11 +748,11 @@ class Tetris:
     def _on_lock(self):
         lines = self._clear_lines()
         if lines:
-            self.combo += 1
             self._calculate_level(lines)
             self._increase_score(lines=lines)
+            self.combo += 1
         else:
-            self.combo = 0
+            self.combo = 1
         self.lock_timer = 0
         self.lock_started = False
         self.block = None
@@ -747,7 +778,7 @@ class Tetris:
         self.current_line_count = 0
         self.score = 0
         self.paused = False
-        self.combo = 0
+        self.combo = 1
 
         self.repeating_keys = set()
         self.key_repeats_timers = {k: 0 for k in KEY_REPEATS}
@@ -768,24 +799,19 @@ class Tetris:
                         self.repeating_keys.add(event.key)
                     if event.key == pygame.K_ESCAPE:
                         self.paused = not self.paused
-                    elif event.key == pygame.K_DOWN:
-                        self._soft_drop()
-                    elif event.key == pygame.K_SPACE:
-                        self._hard_drop()
-                        self._on_lock()
                     elif event.key == pygame.K_c:
                         self._hold_block()
                     else:
                         moves = {
-                            pygame.K_LEFT: self.block.move_left,
-                            pygame.K_RIGHT: self.block.move_right,
-                            pygame.K_z: self.block.rotate_clockwise,
-                            pygame.K_UP: self.block.rotate_anticlockwise,
+                            pygame.K_DOWN: Movement.SOFT_DROP,
+                            pygame.K_SPACE: Movement.HARD_DROP,
+                            pygame.K_LEFT: Movement.LEFT,
+                            pygame.K_RIGHT: Movement.RIGHT,
+                            pygame.K_z: Movement.ROT_C,
+                            pygame.K_UP: Movement.ROT_AC,
                         }
                         if event.key in moves:
-                            result = moves[event.key]()
-                            if result:
-                                self.lock_timer = 0
+                            self._do_move(moves[event.key])
 
             if self.paused:
                 continue
@@ -831,7 +857,7 @@ class Tetris:
                 if self.lock_timer >= LOCK_DELAY:
                     moved = self.block.move_down()
                     self.new_block = not moved
-                    if moved:
+                    if not moved:
                         self._on_lock()
             self.render()
             pygame.display.update()
