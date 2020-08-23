@@ -747,7 +747,7 @@ class Tetris:
                 elif self.block is None:
                     continue
                 if event.type == pygame.KEYDOWN:
-                    if event.key in KEY_REPEATS:
+                    if event.key in KEY_REPEATS and not getattr(event, "repeat", False):
                         self.repeating_keys.add(event.key)
                     if event.key == pygame.K_ESCAPE:
                         self.paused = not self.paused
@@ -792,7 +792,9 @@ class Tetris:
                 self.key_repeats_timers[key] += millis
                 delay, interval = KEY_REPEATS[key]
                 if self.key_repeats_timers[key] - delay > interval:
-                    pygame.event.post(pygame.event.Event(pygame.KEYDOWN, key=key))
+                    pygame.event.post(
+                        pygame.event.Event(pygame.KEYDOWN, key=key, repeat=True)
+                    )
                     self.key_repeats_timers[key] -= interval
             if self.new_block:
                 self.new_block_timer += millis
