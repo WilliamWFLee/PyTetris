@@ -725,6 +725,7 @@ class Tetris:
         self.level = 1
         self.current_line_count = 0
         self.score = 0
+        self.paused = False
 
         game_over = False
         while not game_over:
@@ -734,7 +735,9 @@ class Tetris:
                 elif self.block is None:
                     continue
                 if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_DOWN:
+                    if event.key == pygame.K_ESCAPE:
+                        self.paused = not self.paused
+                    elif event.key == pygame.K_DOWN:
                         self._soft_drop()
                     elif event.key == pygame.K_SPACE:
                         self._hard_drop()
@@ -751,6 +754,9 @@ class Tetris:
                             result = moves[event.key]()
                             if result:
                                 self.lock_timer = 0
+            if self.paused:
+                continue
+
             if self.new_block and self.new_block_timer >= NEW_BLOCK_DELAY:
                 self._new_block()
                 self.new_block = False
