@@ -289,6 +289,8 @@ class TetrominoBase:
         """
         if self.placed:
             return True
+        if skip_non_empty:
+            test_place = False
         if test_place and not self._can_place():
             return False
         for y, row in enumerate(self.block):
