@@ -554,24 +554,18 @@ class Tetris:
         self.fall_interval = 1000 * (0.8 - 0.007 * (self.level - 1)) ** (self.level - 1)
 
     def _increase_score(
-        self,
-        *,
-        lines: int = 0,
-        soft_drop_cells: int = 0,
-        hard_drop_cells: int = 0,
-        combo: int = 1,
+        self, *, lines: int = 0, soft_drop_cells: int = 0, hard_drop_cells: int = 0,
     ):
         self.score += (
             (100 * ADJUSTED_LINE_SCORE[lines]) * self.level
             + soft_drop_cells
             + 2 * hard_drop_cells
-            + 50 * (combo - 1) * self.level
+            + 50 * (self.combo - 1) * self.level
         )
 
     def _hard_drop(self):
         lines = self.block.hard_drop()
         self._increase_score(hard_drop_cells=lines)
-        self.block = None
         self.new_block = True
 
     def _soft_drop(self):
@@ -720,6 +714,18 @@ class Tetris:
             self.hold_block_type = old_block_type
         self.block_held = True
 
+    def _on_lock(self):
+        lines = self._clear_lines()
+        if lines:
+            self.combo += 1
+            self._calculate_level(lines)
+            self._increase_score(lines=lines)
+        else:
+            self.combo = 0
+        self.lock_timer = 0
+        self.lock_started = False
+        self.block = None
+
     def _run_game(self):
         # Returns whether to the game is still to run
 
@@ -766,6 +772,7 @@ class Tetris:
                         self._soft_drop()
                     elif event.key == pygame.K_SPACE:
                         self._hard_drop()
+                        self._on_lock()
                     elif event.key == pygame.K_c:
                         self._hold_block()
                     else:
@@ -823,17 +830,9 @@ class Tetris:
                     self.lock_started = True
                 if self.lock_timer >= LOCK_DELAY:
                     moved = self.block.move_down()
-                    self.block = None
                     self.new_block = not moved
-                    self.lock_timer = 0
-            else:
-                lines = self._clear_lines()
-                if lines:
-                    self.combo += 1
-                    self._calculate_level(lines)
-                    self._increase_score(lines=lines, combo=self.combo)
-                else:
-                    self.combo = 0
+                    if moved:
+                        self._on_lock()
             self.render()
             pygame.display.update()
         return True
