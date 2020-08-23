@@ -744,6 +744,10 @@ class Tetris:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     return False
+                elif event.type == pygame.KEYUP:
+                    if event.key in self.repeating_keys:
+                        self.repeating_keys.remove(event.key)
+                        self.key_repeats_timers[event.key] = 0
                 elif self.block is None:
                     continue
                 if event.type == pygame.KEYDOWN:
@@ -768,10 +772,6 @@ class Tetris:
                             result = moves[event.key]()
                             if result:
                                 self.lock_timer = 0
-                elif event.type == pygame.KEYUP:
-                    if event.key in self.repeating_keys:
-                        self.repeating_keys.remove(event.key)
-                        self.key_repeats_timers[event.key] = 0
 
             if self.paused:
                 continue
