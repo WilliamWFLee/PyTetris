@@ -182,14 +182,8 @@ JLSTZ_WALL_KICKS = {
         1: [(-1, 0), (-1, -1), (0, 2), (-1, 2)],
         3: [(1, 0), (1, -1), (0, 2), (1, 2)],
     },
-    1: {
-        0: [(1, 0), (1, 1), (0, -2), (1, -2)],
-        2: [(1, 0), (1, 1), (0, -2), (1, -2)],
-    },
-    2: {
-        1: [(-1, 0), (-1, -1), (0, 2), (-1, 2)],
-        3: [(1, 0), (1, -1), (0, 2), (1, 2)],
-    },
+    1: {0: [(1, 0), (1, 1), (0, -2), (1, -2)], 2: [(1, 0), (1, 1), (0, -2), (1, -2)],},
+    2: {1: [(-1, 0), (-1, -1), (0, 2), (-1, 2)], 3: [(1, 0), (1, -1), (0, 2), (1, 2)],},
     3: {  # fmt: on
         2: [(-1, 0), (-1, 1), (0, -2), (-1, -2)],
         0: [(-1, 0), (-1, 1), (0, -2), (-1, -2)],
@@ -539,6 +533,25 @@ class Tetromino(TetrominoBase):
         self.ghost_piece.remove()
 
 
+class MovementEntry:
+    """
+    Represents a movement made
+    """
+
+    def __init__(self, movement: Movement, **attrs):
+        self.movement = movement
+        self.__dict__.update(attrs)
+
+    def __repr__(self):
+        return "{0.__name__}({1})".format(
+            type(self),
+            ", ".join(
+                f"{k}={v!r}" if isinstance(v, str) else f"{k}={v}"
+                for k, v in self.__dict__.items()
+            ),
+        )
+
+
 class Tetris:
     """
     Represents a game of Tetris
@@ -581,32 +594,42 @@ class Tetris:
         self.new_block = True
         self._on_lock()
 
+        return True if lines else False
+
     def _soft_drop(self):
         if self.block.move_down():
             self._increase_score(soft_drop_cells=1)
             self.block_fall = False
+            return True
+        return False
 
     def _do_move(self, movement: Movement):
         moves = {
             Movement.SOFT_DROP: self._soft_drop,
             Movement.HARD_DROP: self._hard_drop,
-            Movement.SOFT_DROP: self.block.move_down,
             Movement.GRAVITY: self.block.move_down,
             Movement.LEFT: self.block.move_left,
             Movement.RIGHT: self.block.move_right,
             Movement.ROT_C: self.block.rotate_clockwise,
             Movement.ROT_AC: self.block.rotate_anticlockwise,
         }
-        result = moves[movement]()
-        if result and movement in (
-            Movement.LEFT,
-            Movement.RIGHT,
-        ):
-            self.lock_timer = 0
-        elif movement in (Movement.ROT_C, Movement.ROT_AC):
-            success, old, new, wall_kick = result
-            if success:
+        success = moves[movement]()
+        if movement in (Movement.ROT_C, Movement.ROT_AC):
+            success, old_rotation, new_rotation, wall_kick = success
+        if success:
+            log_entry = MovementEntry(movement)
+            if movement in (
+                Movement.LEFT,
+                Movement.RIGHT,
+                Movement.ROT_AC,
+                Movement.ROT_C,
+            ):
                 self.lock_timer = 0
+                if movement in (Movement.ROT_AC, Movement.ROT_C):
+                    log_entry.old_rotation = old_rotation
+                    log_entry.new_rotation = new_rotation
+                    log_entry.wall_kick = wall_kick
+            self.move_log.append(log_entry)
 
     @staticmethod
     def _generate_tetrominoes():  # Implements the Random Generator
@@ -783,6 +806,7 @@ class Tetris:
         self.score = 0
         self.paused = False
         self.combo = 1
+        self.move_log = []
 
         self.repeating_keys = set()
         self.key_repeats_timers = {k: 0 for k in KEY_REPEATS}
