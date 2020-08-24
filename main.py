@@ -178,18 +178,12 @@ COLORS = {
 
 # Wall kick definitions
 JLSTZ_WALL_KICKS = {
-    0: {
-        1: [(-1, 0), (-1, -1), (0, 2), (-1, 2)],
-        3: [(1, 0), (1, -1), (0, 2), (1, 2)],
-    },
+    0: {1: [(-1, 0), (-1, -1), (0, 2), (-1, 2)], 3: [(1, 0), (1, -1), (0, 2), (1, 2)],},
     1: {  # fmt: off
         0: [(1, 0), (1, 1), (0, -2), (1, -2)],
         2: [(1, 0), (1, 1), (0, -2), (1, -2)],
     },  # fmt: on
-    2: {
-        1: [(-1, 0), (-1, -1), (0, 2), (-1, 2)],
-        3: [(1, 0), (1, -1), (0, 2), (1, 2)],
-    },
+    2: {1: [(-1, 0), (-1, -1), (0, 2), (-1, 2)], 3: [(1, 0), (1, -1), (0, 2), (1, 2)],},
     3: {
         2: [(-1, 0), (-1, 1), (0, -2), (-1, -2)],
         0: [(-1, 0), (-1, 1), (0, -2), (-1, -2)],
@@ -382,12 +376,14 @@ class TetrominoBase:
 
         return can_move if test_move else None
 
-    def _rotate(self, amount: int, *, test_rotation: bool = True) -> bool:
+    def _rotate(
+        self, amount: int, *, test_rotation: bool = True
+    ) -> Tuple[bool, Optional[int], Optional[int], Optional[int]]:
         # Rotates a shape by a certain amount
         # Rotations as multiples of 90 degrees clockwise, so a rotation of 1
         # is 90 degrees clockwise, -1 is 90 degrees anticlockwise
         if self.block_type == BlockType.OBlock:
-            return True
+            return True, 0, 0, None
         was_placed = self.placed
         if was_placed:
             self.remove()
@@ -407,18 +403,18 @@ class TetrominoBase:
             except KeyError:
                 pass
             else:
-                for dx, dy in wall_kicks:
+                for i, (dx, dy) in enumerate(wall_kicks):
                     if self.can_move(dx=dx, dy=dy):
                         self._move(dx=dx, dy=dy, test_move=False)
-                        return True
+                        return True, old_rotation, self.rotation, i
 
             self._rotate(-amount)  # Undoes the rotation
             if was_placed:
                 self.place()
-            return False
+            return False, None, None, None
         if was_placed:
             self.place()
-        return True
+        return True, old_rotation, self.rotation, None
 
     def move_down(self, *, test_move: bool = True) -> bool:
         """
@@ -599,10 +595,12 @@ class Tetris:
         if result and movement in (
             Movement.LEFT,
             Movement.RIGHT,
-            Movement.ROT_C,
-            Movement.ROT_AC,
         ):
             self.lock_timer = 0
+        elif movement in (Movement.ROT_C, Movement.ROT_AC):
+            success, old, new, wall_kick = result
+            if success:
+                self.lock_timer = 0
 
     @staticmethod
     def _generate_tetrominoes():  # Implements the Random Generator
