@@ -177,14 +177,21 @@ COLORS = {
 
 
 # Wall kick definitions
+# fmt: off
 JLSTZ_WALL_KICKS = {
-    0: {  # fmt: off
+    0: {
         1: [(-1, 0), (-1, -1), (0, 2), (-1, 2)],
         3: [(1, 0), (1, -1), (0, 2), (1, 2)],
     },
-    1: {0: [(1, 0), (1, 1), (0, -2), (1, -2)], 2: [(1, 0), (1, 1), (0, -2), (1, -2)],},
-    2: {1: [(-1, 0), (-1, -1), (0, 2), (-1, 2)], 3: [(1, 0), (1, -1), (0, 2), (1, 2)],},
-    3: {  # fmt: on
+    1: {
+        0: [(1, 0), (1, 1), (0, -2), (1, -2)],
+        2: [(1, 0), (1, 1), (0, -2), (1, -2)],
+    },
+    2: {
+        1: [(-1, 0), (-1, -1), (0, 2), (-1, 2)],
+        3: [(1, 0), (1, -1), (0, 2), (1, 2)],
+    },
+    3: {
         2: [(-1, 0), (-1, 1), (0, -2), (-1, -2)],
         0: [(-1, 0), (-1, 1), (0, -2), (-1, -2)],
     },
@@ -192,10 +199,10 @@ JLSTZ_WALL_KICKS = {
 
 
 I_WALL_KICKS = {
-    0: {  # fmt: off
+    0: {
         1: [(-2, 0), (1, 0), (-2, -1), (1, -2)],
         3: [(-1, 0), (2, 0), (-1, -2), (2, 1)],
-    },  # fmt: on
+    },
     1: {
         0: [(2, 0), (-1, 0), (2, -1), (-1, 2)],
         2: [(-1, 0), (2, 0), (-1, -2), (2, 1)],
@@ -204,13 +211,13 @@ I_WALL_KICKS = {
         1: [(1, 0), (-2, 0), (1, 2), (-2, -1)],
         3: [(2, 0), (-1, 0), (2, -1), (-1, 2)],
     },
-    3: {  # fmt: off
+    3: {
         2: [(1, 0), (1, 0), (-2, 1), (1, -2)],
         0: [(1, 0), (-2, 0), (1, 2), (-2, -1)],
-    },  # fmt: on
+    },
 }
 
-
+# fmt: on
 WALL_KICKS = {
     BlockType.JBlock: JLSTZ_WALL_KICKS,
     BlockType.LBlock: JLSTZ_WALL_KICKS,
@@ -258,6 +265,16 @@ class Movement(Enum):
     RIGHT = 4
     ROT_C = 5
     ROT_AC = 6
+
+
+KEY_TO_MOVE = {
+    pygame.K_DOWN: Movement.SOFT_DROP,
+    pygame.K_SPACE: Movement.HARD_DROP,
+    pygame.K_LEFT: Movement.LEFT,
+    pygame.K_RIGHT: Movement.RIGHT,
+    pygame.K_z: Movement.ROT_C,
+    pygame.K_UP: Movement.ROT_AC,
+}
 
 
 class TetrominoBase:
@@ -830,16 +847,8 @@ class Tetris:
                     elif event.key == pygame.K_c:
                         self._hold_block()
                     else:
-                        moves = {
-                            pygame.K_DOWN: Movement.SOFT_DROP,
-                            pygame.K_SPACE: Movement.HARD_DROP,
-                            pygame.K_LEFT: Movement.LEFT,
-                            pygame.K_RIGHT: Movement.RIGHT,
-                            pygame.K_z: Movement.ROT_C,
-                            pygame.K_UP: Movement.ROT_AC,
-                        }
-                        if event.key in moves:
-                            self._do_move(moves[event.key])
+                        if event.key in KEY_TO_MOVE:
+                            self._do_move(KEY_TO_MOVE[event.key])
 
             if self.paused:
                 continue
