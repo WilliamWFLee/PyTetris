@@ -254,6 +254,26 @@ BLOCKS = {
                        "   "],
 }
 # fmt: on
+
+# T-Block pointing side corner blocks for T-Spins
+T_BLOCK_POINTING_CORNERS = {
+    0: [(0, 0), (2, 0)],
+    1: [(2, 0), (2, 2)],
+    2: [(2, 2), (0, 2)],
+    3: [(0, 2), (0, 0)],
+}
+
+# Block behind the center piece on T-Block
+T_BLOCK_BEHIND_BLOCK = {
+    0: (1, 2),
+    1: (0, 1),
+    2: (1, 0),
+    3: (2, 1),
+}
+
+TST_WALL_KICKS = (1, 3)  # Wall kicks that determine if a TST has occurred
+TST_ROTATIONS = (3, 0, 1)  # For clockwise direction, reverse for anticlockwise
+
 Color = Tuple[int, int, int]
 
 
@@ -265,6 +285,9 @@ class Movement(Enum):
     RIGHT = 4
     ROT_C = 5
     ROT_AC = 6
+
+
+ROTATION_MOVEMENTS = (Movement.ROT_AC, Movement.ROT_C)
 
 
 KEY_TO_MOVE = {
@@ -609,7 +632,6 @@ class Tetris:
         lines = self.block.hard_drop()
         self._increase_score(hard_drop_cells=lines)
         self.new_block = True
-        self._on_lock()
 
         return True if lines else False
 
@@ -647,6 +669,8 @@ class Tetris:
                     log_entry.new_rotation = new_rotation
                     log_entry.wall_kick = wall_kick
             self.move_log.append(log_entry)
+            if movement == Movement.HARD_DROP:
+                self._on_lock()
 
     @staticmethod
     def _generate_tetrominoes():  # Implements the Random Generator
@@ -789,7 +813,80 @@ class Tetris:
             self.hold_block_type = old_block_type
         self.block_held = True
 
+    def _determine_t_spin(self) -> Optional[bool]:
+        # Returns None if no T-Spin, True for a full T-spin, False for a Mini
+        if (
+            self.block.block_type == BlockType.TBlock
+            and self.move_log[-1].movement in ROTATION_MOVEMENTS
+        ):
+            corners = []
+            for x, y in ((0, 0), (0, 2), (2, 0), (2, 2)):
+                grid_x = x + self.block.x
+                grid_y = y + self.block.y
+                if (
+                    grid_x < COLUMNS
+                    and grid_y < ROWS
+                    and self.grid[grid_y][grid_x] is not None
+                ):
+                    corners.append((x, y))
+            if len(corners) >= 3:  # 4 is possible with the TST twist
+                # If one of the corners next to the pointing side
+                # is not occupied, then the T-Spin is a Mini
+                full_spin = True
+                if any(
+                    pos not in corners
+                    for pos in T_BLOCK_POINTING_CORNERS[self.block.rotation]
+                ):
+                    full_spin = False
+                else:
+                    # If the block behind the centerpiece of the T-Block is empty,
+                    # and the two blocks either side of the empty block are filled,
+                    # (forming a hole) it is also a T-Spin Mini.
+                    x, y = (
+                        x1 + x2
+                        for x1, x2 in zip(
+                            (self.block.x, self.block.y),
+                            T_BLOCK_BEHIND_BLOCK[self.block.rotation],
+                        )
+                    )
+                    if (
+                        not full_spin
+                        and len(corners) == 3
+                        and self.grid[y][x] is None
+                        and all(
+                            pos in T_BLOCK_POINTING_CORNERS[self.block.rotation]
+                            for pos in corners
+                        )
+                    ):
+                        full_spin = False
+                if not full_spin:
+                    # T-Spin mini is upgraded to a standard T-Spin
+                    # if a TST twist is executed
+                    rotation = None
+                    for i, entry in enumerate(self.move_log[-2:]):
+                        if entry.movement not in (Movement.ROT_AC, Movement.ROT_C) or (
+                            rotation is not None and entry.movement != rotation
+                        ):
+                            break
+                        rotation = entry.movement
+                        expected_transition = (
+                            TST_ROTATIONS
+                            if entry.movement == Movement.ROT_C
+                            else tuple(reversed(TST_ROTATIONS))
+                        )[i : i + 2]
+                        actual_transition = (entry.old_rotation, entry.new_rotation)
+                        if not (
+                            entry.wall_kick == TST_WALL_KICKS[i]
+                            and actual_transition == expected_transition
+                        ):
+                            break
+                    else:
+                        full_spin = True
+                return full_spin
+        return None
+
     def _on_lock(self):
+        self._determine_t_spin()
         lines = self._clear_lines()
         if lines:
             self._calculate_level(lines)
