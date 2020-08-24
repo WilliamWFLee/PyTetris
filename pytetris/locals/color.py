@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-PyTetris: Python version of Tetris
+pytetris.locals.color
 
 MIT License
 
@@ -27,13 +27,20 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-from pytetris.game import Tetris
+from .game import BlockType
 
 
-def main():
-    game = Tetris()
-    game.run()
+COLORS = {
+    BlockType.IBlock: (0, 255, 255),
+    BlockType.JBlock: (0, 0, 255),
+    BlockType.LBlock: (255, 165, 0),
+    BlockType.OBlock: (255, 255, 0),
+    BlockType.SBlock: (0, 255, 0),
+    BlockType.TBlock: (160, 32, 240),
+    BlockType.ZBlock: (255, 0, 0),
+}
 
-
-if __name__ == "__main__":
-    main()
+# Color tuples
+WHITE = 3 * (255,)
+BLACK = 3 * (0,)
+GREY = 3 * (127,)

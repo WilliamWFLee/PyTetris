@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-PyTetris: Python version of Tetris
+pytetris.locals.types
 
 MIT License
 
@@ -27,13 +27,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-from pytetris.game import Tetris
+from typing import Tuple
 
-
-def main():
-    game = Tetris()
-    game.run()
-
-
-if __name__ == "__main__":
-    main()
+Color = Tuple[int, int, int]
