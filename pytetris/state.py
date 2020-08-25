@@ -49,7 +49,7 @@ from .locals.game import (
     BlockType,
     Movement,
 )
-from .locals.size import COLUMNS, ROWS, SPAWN_POS
+from .locals.size import COLUMNS, ROWS, SPAWN_POS, VISIBLE_ROWS
 from .locals.types import Color
 
 
@@ -588,7 +588,17 @@ class TetrisState:
                 return full_spin
         return None
 
+    def _topped_out(self):
+        for row in reversed(self.grid[:-VISIBLE_ROWS]):
+            for square in row:
+                if square is not None:
+                    return True
+        return False
+
     def _on_lock(self):
+        if self._topped_out():
+            self.game_over = True
+            return
         t_spin = self._determine_t_spin()
         lines = self._clear_lines()
         if lines or t_spin is not None:
