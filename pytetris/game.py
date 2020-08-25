@@ -199,12 +199,12 @@ class Tetris:
                 elif self.state.block is None:
                     continue
                 if event.type == pygame.KEYDOWN:
+                    if event.key in KEY_TO_MOVE:
+                        self.state._do_move(KEY_TO_MOVE[event.key])
                     if event.key in KEY_REPEATS and not getattr(event, "repeat", False):
                         self.repeating_keys.add(event.key)
                     elif event.key == pygame.K_c:
                         self.state._hold_block()
-                    elif event.key in KEY_TO_MOVE:
-                        self.state._do_move(KEY_TO_MOVE[event.key])
 
             if self.state.paused:
                 continue
