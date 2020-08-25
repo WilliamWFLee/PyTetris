@@ -32,14 +32,7 @@ from typing import Optional
 import pygame
 
 from .locals.color import BLACK, COLORS, GREY, WHITE
-from .locals.game import (
-    BLOCKS,
-    FONT,
-    KEY_REPEATS,
-    KEY_TO_MOVE,
-    PREVIEW_NUM,
-    BlockType,
-)
+from .locals.game import BLOCKS, FONT, KEY_REPEATS, KEY_TO_MOVE, PREVIEW_NUM, BlockType
 from .locals.size import (
     DISPLAY_SIZE,
     GRID_BOX_SIZE,
