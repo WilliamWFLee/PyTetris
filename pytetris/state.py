@@ -610,6 +610,7 @@ class TetrisState:
             self.new_block_timer = 0
             if self.block is None:
                 self.game_over = True
+                return
 
         if self.new_block:
             self.new_block_timer += millis

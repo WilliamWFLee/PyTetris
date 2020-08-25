@@ -63,9 +63,6 @@ class Tetris:
     Represents a game of Tetris
     """
 
-    def __init__(self):
-        self.state = TetrisState()
-
     @staticmethod
     def _draw_grid_square(
         surface: pygame.Surface, color: Optional[Color], x: int, y: int
@@ -178,13 +175,12 @@ class Tetris:
     def _run_game(self):
         # Returns whether to the game is still to run
 
+        self.state = TetrisState()
         self.clock = pygame.time.Clock()
-
         self.repeating_keys = set()
         self.key_repeats_timers = {k: 0 for k in KEY_REPEATS}
 
-        game_over = False
-        while not game_over:
+        while not self.state.game_over:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     return False
@@ -209,11 +205,11 @@ class Tetris:
             if self.state.paused:
                 continue
 
-            if game_over:
-                break
-
             millis = self.clock.tick()
             self.state._update_time(millis)
+
+            if self.state.game_over:
+                break
 
             for key in self.repeating_keys:
                 self.key_repeats_timers[key] += millis
