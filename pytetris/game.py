@@ -188,7 +188,11 @@ class Tetris:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     return False
-                elif event.type == pygame.KEYUP:
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                    self.state.paused = not self.state.paused
+                if self.state.paused:
+                    break
+                if event.type == pygame.KEYUP:
                     if event.key in self.repeating_keys:
                         self.repeating_keys.remove(event.key)
                         self.key_repeats_timers[event.key] = 0
@@ -197,13 +201,10 @@ class Tetris:
                 if event.type == pygame.KEYDOWN:
                     if event.key in KEY_REPEATS and not getattr(event, "repeat", False):
                         self.repeating_keys.add(event.key)
-                    if event.key == pygame.K_ESCAPE:
-                        self.state.paused = not self.state.paused
                     elif event.key == pygame.K_c:
                         self.state._hold_block()
-                    else:
-                        if event.key in KEY_TO_MOVE:
-                            self.state._do_move(KEY_TO_MOVE[event.key])
+                    elif event.key in KEY_TO_MOVE:
+                        self.state._do_move(KEY_TO_MOVE[event.key])
 
             if self.state.paused:
                 continue
