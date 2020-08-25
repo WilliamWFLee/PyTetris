@@ -32,12 +32,15 @@ from typing import List, Optional, Tuple
 
 from .locals.color import COLORS
 from .locals.game import (
-    ADJUSTED_LINE_SCORE,
+    ADJUSTED_LINE_COUNT,
+    B2B_MULTIPLIER,
     BLOCKS,
+    DIFFICULT_LINE_CLEARS,
     LINE_GOAL_MULTIPLIER,
     LOCK_DELAY,
     NEW_BLOCK_DELAY,
     ROTATION_MOVEMENTS,
+    SCORING_MULTIPLIER,
     T_BLOCK_BEHIND_BLOCK,
     T_BLOCK_POINTING_CORNERS,
     TST_ROTATIONS,
@@ -365,8 +368,18 @@ class TetrisState:
         self.current_line_count = 0
         self.score = 0
         self.paused = False
-        self.combo = 1
         self.move_log = []
+        self.line_clear_log = []
+
+    @property
+    def combo(self) -> int:
+        count = 0
+        for line_clear in reversed(self.line_clear_log):
+            if line_clear is None or not line_clear[0]:
+                break
+            count += 1
+
+        return count
 
     def _clear_lines(self) -> int:
         count = 0
@@ -383,21 +396,49 @@ class TetrisState:
     def _calculate_level(self, lines: int):
         if not lines:
             return
-        self.current_line_count += ADJUSTED_LINE_SCORE[lines]
+        self.current_line_count += ADJUSTED_LINE_COUNT[lines]
         while self.current_line_count >= self.level * LINE_GOAL_MULTIPLIER:
             self.current_line_count -= self.level * LINE_GOAL_MULTIPLIER
             self.level += 1
         self.fall_interval = 1000 * (0.8 - 0.007 * (self.level - 1)) ** (self.level - 1)
 
+    def _previous_line_clear_difficult(self):
+        for line_clear in reversed(self.line_clear_log[:-1]):
+            if line_clear is not None:
+                if line_clear in DIFFICULT_LINE_CLEARS:
+                    return True
+                elif line_clear[1] is not None:
+                    continue
+            break
+        return False
+
     def _increase_score(
-        self, *, lines: int = 0, soft_drop_cells: int = 0, hard_drop_cells: int = 0,
+        self,
+        *,
+        lines: int = 0,
+        soft_drop_cells: int = 0,
+        hard_drop_cells: int = 0,
+        t_spin: Optional[bool] = None,
     ):
-        self.score += (
-            (100 * ADJUSTED_LINE_SCORE[lines]) * self.level
-            + soft_drop_cells
-            + 2 * hard_drop_cells
-            + 50 * (self.combo - 1) * self.level
-        )
+        back_to_back = False
+        line_clear = (lines, t_spin)
+        if (
+            line_clear in DIFFICULT_LINE_CLEARS
+            and self._previous_line_clear_difficult()
+        ):
+            back_to_back = True
+        if lines or t_spin is not None:
+            self.score += int(
+                SCORING_MULTIPLIER[line_clear]
+                * self.level
+                * (B2B_MULTIPLIER if back_to_back else 1)
+            )
+        if soft_drop_cells:
+            self.score += soft_drop_cells
+        if hard_drop_cells:
+            self.score += 2 * hard_drop_cells
+        if lines and self.combo > 1:
+            self.score += 50 * self.combo * self.level
 
     def _hard_drop(self):
         lines = self.block.hard_drop()
@@ -548,14 +589,15 @@ class TetrisState:
         return None
 
     def _on_lock(self):
-        self._determine_t_spin()
+        t_spin = self._determine_t_spin()
         lines = self._clear_lines()
+        if lines or t_spin is not None:
+            self.line_clear_log.append((lines, t_spin))
+        else:
+            self.line_clear_log.append(None)
+        self._increase_score(lines=lines, t_spin=t_spin)
         if lines:
             self._calculate_level(lines)
-            self._increase_score(lines=lines)
-            self.combo += 1
-        else:
-            self.combo = 1
         self.lock_timer = 0
         self.lock_started = False
         self.block = None

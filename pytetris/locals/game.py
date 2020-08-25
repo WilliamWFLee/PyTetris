@@ -28,7 +28,6 @@ SOFTWARE.
 """
 
 from enum import Enum
-from collections import defaultdict
 
 import pygame
 
@@ -59,12 +58,47 @@ class Movement(Enum):
 
 # The length of time before a shape locks
 LOCK_DELAY = 500
+
+# Time between a shape locking and the new block
 NEW_BLOCK_DELAY = 200
 
 # The number of lines to clear per level
 LINE_GOAL_MULTIPLIER = 5
 
-ADJUSTED_LINE_SCORE = defaultdict(lambda: 0, {1: 1, 2: 3, 3: 5, 4: 8})
+# Adjusted line count for levels
+ADJUSTED_LINE_COUNT = {
+    0: 0,
+    1: 1,
+    2: 3,
+    3: 5,
+    4: 8,
+}
+
+# Tuple format (lines, Full T-Spin bool or None)
+SCORING_MULTIPLIER = {
+    (1, None): 100,  # Single
+    (0, False): 100,  # T-Spin Mini
+    (1, False): 200,  # T-Spin Mini Single
+    (2, None): 300,  # Double
+    (0, True): 400,  # T-Spin
+    (2, False): 400,  # T-Spin Mini Double
+    (3, None): 500,  # Triple
+    (4, None): 800,  # Tetris
+    (1, True): 800,  # T-Spin Single
+    (2, True): 1200,  # T-Spin Double,
+    (3, True): 1600,  # T-Spin Triple,
+}
+
+B2B_MULTIPLIER = 1.5  # Multiplier for difficult line clears
+DIFFICULT_LINE_CLEARS = [
+    (4, None),  # Tetris
+    (1, False),  # T-Spin Mini Single
+    (2, False),  # T-Spin Mini Double
+    (1, True),  # T-Spin Single
+    (2, True),  # T-Spin Double
+    (3, True),  # T-Spin Triple
+]
+
 
 # Number of preview pieces
 PREVIEW_NUM = 3
