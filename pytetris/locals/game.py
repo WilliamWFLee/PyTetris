@@ -219,6 +219,6 @@ KEY_TO_MOVE = {
     pygame.K_SPACE: Movement.HARD_DROP,
     pygame.K_LEFT: Movement.LEFT,
     pygame.K_RIGHT: Movement.RIGHT,
-    pygame.K_z: Movement.ROT_C,
-    pygame.K_UP: Movement.ROT_AC,
+    pygame.K_z: Movement.ROT_AC,
+    pygame.K_UP: Movement.ROT_C,
 }
