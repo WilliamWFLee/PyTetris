@@ -75,6 +75,17 @@ class TetrominoBase:
         self.color = color
         self.placed = False
 
+    def with_remove(method):  # noqa
+        def inner(self, *args, **kwargs):
+            was_placed = self.placed
+            self.remove()
+            ret = method(self, *args, **kwargs)
+            if was_placed:
+                self.place()
+            return ret
+
+        return inner
+
     def _can_place(self) -> bool:
         return self.can_move(dx=0, dy=0)
 
@@ -125,11 +136,10 @@ class TetrominoBase:
                     self.grid[self.y + y][self.x + x] = None
         self.placed = False
 
+    @with_remove
     def can_move(self, dx: int, dy: int) -> bool:
         # Determines whether this shape can move in a given direction
         can_move = False
-        was_placed = self.placed
-        self.remove()
         for y, row in enumerate(self.block):
             for x, square in enumerate(row):
                 if not square == ".":
@@ -150,25 +160,21 @@ class TetrominoBase:
             break
         else:
             can_move = True
-        if was_placed:
-            self.place(test_place=False)
         return can_move
 
+    @with_remove
     def _move(self, dx: int = 0, dy: int = 0, test_move: bool = True) -> Optional[bool]:
         # Moves the block to the specified location
         # Returns if the operation succeeded, if test_move is True, otherwise None
         if test_move:
             can_move = self.can_move(dx=dx, dy=dy)
-        was_placed = self.placed
-        self.remove()
         if not test_move or can_move:
             self.x += dx
             self.y += dy
-        if was_placed:
-            self.place()
 
         return can_move if test_move else None
 
+    @with_remove
     def _rotate(
         self, amount: int, *, test_rotation: bool = True
     ) -> Tuple[bool, Optional[int], Optional[int], Optional[int]]:
@@ -177,9 +183,6 @@ class TetrominoBase:
         # is 90 degrees clockwise, -1 is 90 degrees anticlockwise
         if self.block_type == BlockType.OBlock:
             return True, 0, 0, None
-        was_placed = self.placed
-        if was_placed:
-            self.remove()
         amount %= 4
         old_rotation = self.rotation
         self.rotation = (self.rotation + amount) % 4
@@ -202,11 +205,7 @@ class TetrominoBase:
                         return True, old_rotation, self.rotation, i
 
             self._rotate(-amount)  # Undoes the rotation
-            if was_placed:
-                self.place()
             return False, None, None, None
-        if was_placed:
-            self.place()
         return True, old_rotation, self.rotation, None
 
     def move_down(self, *, test_move: bool = True) -> bool:
